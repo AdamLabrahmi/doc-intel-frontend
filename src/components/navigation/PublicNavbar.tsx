@@ -7,7 +7,7 @@ import {
   Menu,
   X,
 } from "lucide-react";
-
+import { ROUTES } from "@/routes/routePaths";
 import { buttonVariants } from "@/components/ui/button";
 import { publicNavigationItems } from "@/config/public-navigation.config";
 import { cn } from "@/lib/utils";
@@ -174,7 +174,7 @@ export function PublicNavbar() {
 
           <div className="grid gap-3 border-t border-slate-100 pt-4">
             <Link
-              to="/login"
+              to={ROUTES.login}
               onClick={closeMobileMenu}
               className={cn(
                 buttonVariants({
@@ -187,7 +187,7 @@ export function PublicNavbar() {
             </Link>
 
             <Link
-              to="/register"
+              to={ROUTES.register}
               onClick={closeMobileMenu}
               className={cn(
                 buttonVariants(),

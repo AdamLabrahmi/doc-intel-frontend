@@ -4,6 +4,7 @@ import {
   useReducedMotion,
   type Variants,
 } from "framer-motion";
+import { ROUTES } from "@/routes/routePaths";
 import {
   ArrowRight,
   BrainCircuit,
@@ -322,7 +323,7 @@ export default function Home() {
                 className="mt-9 flex flex-col gap-3 sm:flex-row"
               >
                 <Link
-                  to="/register"
+                  to={ROUTES.dashboard}
                   className={cn(
                     buttonVariants({
                       size: "lg",

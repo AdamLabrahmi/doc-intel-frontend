@@ -2,19 +2,12 @@ import { z } from "zod";
 
 export const registerSchema = z
   .object({
-    firstName: z
+    fullName: z
       .string()
       .trim()
-      .min(1, "Le prénom est obligatoire.")
-      .min(2, "Le prénom doit contenir au moins 2 caractères.")
-      .max(50, "Le prénom ne peut pas dépasser 50 caractères."),
-
-    lastName: z
-      .string()
-      .trim()
-      .min(1, "Le nom est obligatoire.")
-      .min(2, "Le nom doit contenir au moins 2 caractères.")
-      .max(50, "Le nom ne peut pas dépasser 50 caractères."),
+      .min(1, "Le nom complet est obligatoire.")
+      .min(3, "Le nom complet doit contenir au moins 3 caractères.")
+      .max(100, "Le nom complet ne peut pas dépasser 100 caractères."),
 
     email: z
       .string()
@@ -43,9 +36,12 @@ export const registerSchema = z
       .string()
       .min(1, "La confirmation du mot de passe est obligatoire."),
 
-    acceptTerms: z.literal(true, {
-      error: "Vous devez accepter les conditions d’utilisation.",
-    }),
+    acceptTerms: z
+      .boolean()
+      .refine(
+        (value) => value,
+        "Vous devez accepter les conditions d’utilisation.",
+      ),
   })
   .refine(
     (values) => values.password === values.confirmPassword,

@@ -19,6 +19,44 @@ import {
   type RegisterFormValues,
 } from "@/features/auth/schemas/registerSchema";
 
+interface FormErrorProps {
+  id: string;
+  message?: string;
+  reduceMotion: boolean | null;
+}
+
+function FormError({
+  id,
+  message,
+  reduceMotion,
+}: FormErrorProps) {
+  if (!message) {
+    return null;
+  }
+
+  return (
+    <motion.p
+      id={id}
+      initial={
+        reduceMotion
+          ? false
+          : {
+              opacity: 0,
+              y: -4,
+            }
+      }
+      animate={{
+        opacity: 1,
+        y: 0,
+      }}
+      className="text-sm font-medium text-red-600"
+      role="alert"
+    >
+      {message}
+    </motion.p>
+  );
+}
+
 export function RegisterForm() {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] =
@@ -36,8 +74,7 @@ export function RegisterForm() {
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      firstName: "",
-      lastName: "",
+      fullName: "",
       email: "",
       password: "",
       confirmPassword: "",
@@ -54,41 +91,19 @@ export function RegisterForm() {
         window.setTimeout(resolve, 900);
       });
 
-      console.log("Inscription statique :", values);
+      const registrationPayload = {
+        full_name: values.fullName,
+        email: values.email,
+        password: values.password,
+      };
+
+      console.log(
+        "Inscription statique :",
+        registrationPayload,
+      );
     } finally {
       setIsSubmittingForm(false);
     }
-  };
-
-  const renderError = (
-    id: string,
-    message: string | undefined,
-  ) => {
-    if (!message) {
-      return null;
-    }
-
-    return (
-      <motion.p
-        id={id}
-        initial={
-          shouldReduceMotion
-            ? false
-            : {
-                opacity: 0,
-                y: -4,
-              }
-        }
-        animate={{
-          opacity: 1,
-          y: 0,
-        }}
-        className="text-sm font-medium text-red-600"
-        role="alert"
-      >
-        {message}
-      </motion.p>
-    );
   };
 
   return (
@@ -97,78 +112,41 @@ export function RegisterForm() {
       className="space-y-5"
       noValidate
     >
-      <div className="grid gap-5 sm:grid-cols-2">
-        <div className="space-y-2">
-          <label
-            htmlFor="firstName"
-            className="text-sm font-semibold text-slate-800"
-          >
-            Prénom
-          </label>
+      <div className="space-y-2">
+        <label
+          htmlFor="fullName"
+          className="text-sm font-semibold text-slate-800"
+        >
+          Nom complet
+        </label>
 
-          <div className="relative">
-            <UserRound
-              className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-slate-400"
-              aria-hidden="true"
-            />
+        <div className="relative">
+          <UserRound
+            className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-slate-400"
+            aria-hidden="true"
+          />
 
-            <input
-              id="firstName"
-              type="text"
-              autoComplete="given-name"
-              placeholder="Adam"
-              aria-invalid={Boolean(errors.firstName)}
-              aria-describedby={
-                errors.firstName
-                  ? "first-name-error"
-                  : undefined
-              }
-              className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm text-slate-950 outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 aria-[invalid=true]:border-red-400 aria-[invalid=true]:focus:ring-red-500/10"
-              {...register("firstName")}
-            />
-          </div>
-
-          {renderError(
-            "first-name-error",
-            errors.firstName?.message,
-          )}
+          <input
+            id="fullName"
+            type="text"
+            autoComplete="name"
+            placeholder="Yahya Ben Hssine"
+            aria-invalid={Boolean(errors.fullName)}
+            aria-describedby={
+              errors.fullName
+                ? "full-name-error"
+                : undefined
+            }
+            className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm text-slate-950 outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 aria-[invalid=true]:border-red-400 aria-[invalid=true]:focus:ring-red-500/10"
+            {...register("fullName")}
+          />
         </div>
 
-        <div className="space-y-2">
-          <label
-            htmlFor="lastName"
-            className="text-sm font-semibold text-slate-800"
-          >
-            Nom
-          </label>
-
-          <div className="relative">
-            <UserRound
-              className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-slate-400"
-              aria-hidden="true"
-            />
-
-            <input
-              id="lastName"
-              type="text"
-              autoComplete="family-name"
-              placeholder="Labrahmi"
-              aria-invalid={Boolean(errors.lastName)}
-              aria-describedby={
-                errors.lastName
-                  ? "last-name-error"
-                  : undefined
-              }
-              className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm text-slate-950 outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 aria-[invalid=true]:border-red-400 aria-[invalid=true]:focus:ring-red-500/10"
-              {...register("lastName")}
-            />
-          </div>
-
-          {renderError(
-            "last-name-error",
-            errors.lastName?.message,
-          )}
-        </div>
+        <FormError
+          id="full-name-error"
+          message={errors.fullName?.message}
+          reduceMotion={shouldReduceMotion}
+        />
       </div>
 
       <div className="space-y-2">
@@ -201,10 +179,11 @@ export function RegisterForm() {
           />
         </div>
 
-        {renderError(
-          "register-email-error",
-          errors.email?.message,
-        )}
+        <FormError
+          id="register-email-error"
+          message={errors.email?.message}
+          reduceMotion={shouldReduceMotion}
+        />
       </div>
 
       <div className="space-y-2">
@@ -263,20 +242,21 @@ export function RegisterForm() {
           </button>
         </div>
 
-        {errors.password
-          ? renderError(
-              "register-password-error",
-              errors.password.message,
-            )
-          : (
-              <p
-                id="password-requirements"
-                className="text-xs leading-5 text-slate-500"
-              >
-                Minimum 8 caractères, avec une majuscule, une minuscule et un
-                chiffre.
-              </p>
-            )}
+        {errors.password ? (
+          <FormError
+            id="register-password-error"
+            message={errors.password.message}
+            reduceMotion={shouldReduceMotion}
+          />
+        ) : (
+          <p
+            id="password-requirements"
+            className="text-xs leading-5 text-slate-500"
+          >
+            Minimum 8 caractères, avec une majuscule, une minuscule et un
+            chiffre.
+          </p>
+        )}
       </div>
 
       <div className="space-y-2">
@@ -337,10 +317,11 @@ export function RegisterForm() {
           </button>
         </div>
 
-        {renderError(
-          "confirm-password-error",
-          errors.confirmPassword?.message,
-        )}
+        <FormError
+          id="confirm-password-error"
+          message={errors.confirmPassword?.message}
+          reduceMotion={shouldReduceMotion}
+        />
       </div>
 
       <div className="space-y-2">
@@ -376,10 +357,11 @@ export function RegisterForm() {
           </span>
         </label>
 
-        {renderError(
-          "accept-terms-error",
-          errors.acceptTerms?.message,
-        )}
+        <FormError
+          id="accept-terms-error"
+          message={errors.acceptTerms?.message}
+          reduceMotion={shouldReduceMotion}
+        />
       </div>
 
       <Button
