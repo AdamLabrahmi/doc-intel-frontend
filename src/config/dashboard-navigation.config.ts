@@ -1,4 +1,6 @@
 import type { LucideIcon } from "lucide-react";
+import { ROUTES } from "@/routes/routePaths";
+
 import {
   Activity,
   Files,
@@ -17,18 +19,18 @@ export interface DashboardNavigationItem {
 export const dashboardNavigationItems: readonly DashboardNavigationItem[] = [
   {
     label: "Vue d’ensemble",
-    path: "/dashboard",
+    path: ROUTES.dashboard,
     icon: LayoutDashboard,
     end: true,
   },
   {
     label: "Documents",
-    path: "/documents",
+    path: ROUTES.documents,
     icon: Files,
   },
   {
     label: "Importer",
-    path: "/documents/upload",
+    path: ROUTES.documentUpload,
     icon: UploadCloud,
   },
   {

@@ -5,6 +5,8 @@ import {
 } from "react-router-dom";
 
 import Dashboard from "@/pages/Dashboard";
+import Documents from "@/pages/Documents";
+import DocumentUpload from "@/pages/DocumentUpload";
 import Home from "@/pages/Home";
 import Login from "@/pages/Login";
 import Profile from "@/pages/Profile";
@@ -53,10 +55,12 @@ export function AppRouter() {
 
       <Route
         path={ROUTES.forgotPassword}
-        element={<TemporaryPage title="Mot de passe oublié" />}
+        element={
+          <TemporaryPage title="Mot de passe oublié" />
+        }
       />
 
-      {/* Routes protégées */}
+      {/* Routes privées */}
       <Route
         path={ROUTES.dashboard}
         element={
@@ -79,7 +83,7 @@ export function AppRouter() {
         path={ROUTES.documents}
         element={
           <ProtectedRoute>
-            <TemporaryPage title="Documents" />
+            <Documents />
           </ProtectedRoute>
         }
       />
@@ -88,7 +92,7 @@ export function AppRouter() {
         path={ROUTES.documentUpload}
         element={
           <ProtectedRoute>
-            <TemporaryPage title="Importer des documents" />
+            <DocumentUpload />
           </ProtectedRoute>
         }
       />
