@@ -1,8 +1,7 @@
+import axios from "axios";
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import {
-  ArrowLeft,
   CheckCircle2,
   CircleAlert,
   Files,
@@ -10,12 +9,13 @@ import {
   ShieldCheck,
   UploadCloud,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { UploadDropzone } from "@/features/documents/components/UploadDropzone";
+import { useProcessDocumentBatchMutation } from "@/features/documents/hooks/useProcessDocumentBatchMutation";
 import type { UploadFileItem } from "@/features/documents/types/document.types";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
-import { cn } from "@/lib/utils";
 import { ROUTES } from "@/routes/routePaths";
 
 const MAX_BATCH_FILES = 10;
@@ -32,7 +32,11 @@ const allowedExtensions = [
 ] as const;
 
 function validateFile(file: File): string | undefined {
-  const extension = file.name.split(".").pop()?.toLowerCase();
+  const extension =
+    file.name
+      .split(".")
+      .pop()
+      ?.toLowerCase();
 
   if (
     !extension ||
@@ -50,30 +54,99 @@ function validateFile(file: File): string | undefined {
   return undefined;
 }
 
+function extractBackendErrorMessage(
+  error: unknown,
+): string | undefined {
+  if (!axios.isAxiosError(error)) {
+    return undefined;
+  }
+
+  const responseData = error.response?.data;
+
+  if (
+    typeof responseData === "object" &&
+    responseData !== null &&
+    "message" in responseData
+  ) {
+    const message = responseData.message;
+
+    if (
+      typeof message === "string" &&
+      message.trim().length > 0
+    ) {
+      return message;
+    }
+  }
+
+  if (
+    typeof responseData === "string" &&
+    responseData.trim().length > 0
+  ) {
+    return responseData;
+  }
+
+  return undefined;
+}
+
 export default function DocumentUpload() {
   const shouldReduceMotion = useReducedMotion();
 
-  const [files, setFiles] = useState<UploadFileItem[]>([]);
-  const [batchError, setBatchError] = useState<string>();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isCompleted, setIsCompleted] = useState(false);
+  const navigate = useNavigate();
+
+  const processBatchMutation =
+    useProcessDocumentBatchMutation();
+
+  const [files, setFiles] =
+    useState<UploadFileItem[]>([]);
+
+  const [batchError, setBatchError] =
+    useState<string>();
+
+  const [isCompleted, setIsCompleted] =
+    useState(false);
+
+  const [
+    acceptedDocumentsCount,
+    setAcceptedDocumentsCount,
+  ] = useState(0);
+
+  const [
+    rejectedDocumentsCount,
+    setRejectedDocumentsCount,
+  ] = useState(0);
+
+  const isSubmitting =
+    processBatchMutation.isPending;
 
   const validFiles = useMemo(
-    () => files.filter((fileItem) => fileItem.status === "READY"),
+    () =>
+      files.filter(
+        (fileItem) =>
+          fileItem.status === "READY",
+      ),
     [files],
   );
 
-  const handleFilesSelected = (selectedFiles: FileList | null) => {
+  const handleFilesSelected = (
+    selectedFiles: FileList | null,
+  ) => {
     if (!selectedFiles) {
       return;
     }
 
     setIsCompleted(false);
     setBatchError(undefined);
+    setAcceptedDocumentsCount(0);
+    setRejectedDocumentsCount(0);
 
-    const incomingFiles = Array.from(selectedFiles);
+    const incomingFiles =
+      Array.from(selectedFiles);
 
-    if (files.length + incomingFiles.length > MAX_BATCH_FILES) {
+    if (
+      files.length +
+        incomingFiles.length >
+      MAX_BATCH_FILES
+    ) {
       setBatchError(
         `Le batch ne peut pas contenir plus de ${MAX_BATCH_FILES} fichiers.`,
       );
@@ -81,16 +154,20 @@ export default function DocumentUpload() {
       return;
     }
 
-    const newItems: UploadFileItem[] = incomingFiles.map((file) => {
-      const validationError = validateFile(file);
+    const newItems: UploadFileItem[] =
+      incomingFiles.map((file) => {
+        const validationError =
+          validateFile(file);
 
-      return {
-        id: `${file.name}-${file.size}-${file.lastModified}-${crypto.randomUUID()}`,
-        file,
-        status: validationError ? "INVALID" : "READY",
-        error: validationError,
-      };
-    });
+        return {
+          id: `${file.name}-${file.size}-${file.lastModified}-${crypto.randomUUID()}`,
+          file,
+          status: validationError
+            ? "INVALID"
+            : "READY",
+          error: validationError,
+        };
+      });
 
     setFiles((currentFiles) => [
       ...currentFiles,
@@ -98,13 +175,28 @@ export default function DocumentUpload() {
     ]);
   };
 
-  const handleRemoveFile = (fileId: string) => {
+  const handleRemoveFile = (
+    fileId: string,
+  ) => {
     setFiles((currentFiles) =>
-      currentFiles.filter((fileItem) => fileItem.id !== fileId),
+      currentFiles.filter(
+        (fileItem) =>
+          fileItem.id !== fileId,
+      ),
     );
 
     setBatchError(undefined);
     setIsCompleted(false);
+    setAcceptedDocumentsCount(0);
+    setRejectedDocumentsCount(0);
+  };
+
+  const handleClearSelection = () => {
+    setFiles([]);
+    setBatchError(undefined);
+    setIsCompleted(false);
+    setAcceptedDocumentsCount(0);
+    setRejectedDocumentsCount(0);
   };
 
   const handleSubmitBatch = async () => {
@@ -116,23 +208,96 @@ export default function DocumentUpload() {
       return;
     }
 
-    setIsSubmitting(true);
     setBatchError(undefined);
     setIsCompleted(false);
+    setAcceptedDocumentsCount(0);
+    setRejectedDocumentsCount(0);
 
     try {
-      await new Promise((resolve) => {
-        window.setTimeout(resolve, 1200);
-      });
+      const result =
+        await processBatchMutation.mutateAsync(
+          validFiles.map(
+            (fileItem) =>
+              fileItem.file,
+          ),
+        );
 
-      console.log(
-        "Batch statique prêt à être envoyé :",
-        validFiles.map((fileItem) => fileItem.file),
+      setAcceptedDocumentsCount(
+        result.acceptedDocuments,
       );
 
+      setRejectedDocumentsCount(
+        result.rejectedDocuments,
+      );
+
+      if (
+        result.acceptedDocuments === 0
+      ) {
+        const rejectedReasons =
+          result.rejectedFiles
+            .map(
+              (rejectedFile) =>
+                `${rejectedFile.fileName} : ${rejectedFile.reason}`,
+            )
+            .join(" ");
+
+        setBatchError(
+          rejectedReasons ||
+            "Aucun document n'a été accepté par le serveur.",
+        );
+
+        return;
+      }
+
+      if (
+        result.rejectedDocuments > 0
+      ) {
+        const rejectedReasons =
+          result.rejectedFiles
+            .map(
+              (rejectedFile) =>
+                `${rejectedFile.fileName} : ${rejectedFile.reason}`,
+            )
+            .join(" ");
+
+        setBatchError(
+          `${result.acceptedDocuments} document${
+            result.acceptedDocuments > 1
+              ? "s ont"
+              : " a"
+          } été accepté${
+            result.acceptedDocuments > 1
+              ? "s"
+              : ""
+          }, mais ${result.rejectedDocuments} fichier${
+            result.rejectedDocuments > 1
+              ? "s ont"
+              : " a"
+          } été rejeté${
+            result.rejectedDocuments > 1
+              ? "s"
+              : ""
+          }. ${rejectedReasons}`,
+        );
+      }
+
       setIsCompleted(true);
-    } finally {
-      setIsSubmitting(false);
+
+      window.setTimeout(() => {
+        navigate(
+          ROUTES.documents,
+        );
+      }, 1500);
+    } catch (error) {
+      const backendMessage =
+        extractBackendErrorMessage(
+          error,
+        );
+
+      setBatchError(
+        backendMessage ??
+          "Une erreur est survenue pendant l'envoi des documents. Vérifiez que le backend est disponible puis réessayez.",
+      );
     }
   };
 
@@ -152,64 +317,39 @@ export default function DocumentUpload() {
           y: 0,
         }}
         transition={{
-          duration: shouldReduceMotion ? 0 : 0.6,
-          ease: [0.22, 1, 0.36, 1],
+          duration:
+            shouldReduceMotion
+              ? 0
+              : 0.6,
+          ease: [
+            0.22,
+            1,
+            0.36,
+            1,
+          ],
         }}
         className="mx-auto w-full max-w-[1400px] space-y-6"
       >
-        <section className="flex flex-col gap-5 rounded-3xl border border-blue-100 bg-gradient-to-br from-white via-blue-50/60 to-cyan-50/50 p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-8">
-          <div>
-            <span className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700">
-              <UploadCloud
-                className="size-3.5"
-                aria-hidden="true"
-              />
-
-              Nouveau traitement
-            </span>
-
-            <h1 className="mt-4 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
-              Importateur de documents
-            </h1>
-
-            <p className="mt-2 max-w-2xl leading-7 text-slate-600">
-              Sélectionnez un ou plusieurs documents. Les métadonnées et la
-              méthode d’extraction seront déterminées automatiquement par le
-              backend.
-            </p>
-          </div>
-
-          <Link
-            to={ROUTES.documents}
-            className={cn(
-              buttonVariants({
-                variant: "outline",
-              }),
-              "h-11 shrink-0 rounded-xl border-slate-300 bg-white",
-            )}
-          >
-            <ArrowLeft
-              className="size-4"
-              aria-hidden="true"
-            />
-
-            Retour aux documents
-          </Link>
-        </section>
-
         <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
           <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
             <UploadDropzone
               files={files}
-              maxFiles={MAX_BATCH_FILES}
-              onFilesSelected={handleFilesSelected}
-              onRemoveFile={handleRemoveFile}
+              maxFiles={
+                MAX_BATCH_FILES
+              }
+              onFilesSelected={
+                handleFilesSelected
+              }
+              onRemoveFile={
+                handleRemoveFile
+              }
             />
 
             {batchError && (
               <div
                 className="mt-5 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4"
                 role="alert"
+                translate="no"
               >
                 <CircleAlert
                   className="mt-0.5 size-5 shrink-0 text-red-600"
@@ -218,10 +358,12 @@ export default function DocumentUpload() {
 
                 <div>
                   <p className="text-sm font-bold text-red-800">
-                    Import impossible
+                    {isCompleted
+                      ? "Traitement partiellement accepté"
+                      : "Import impossible"}
                   </p>
 
-                  <p className="mt-1 text-sm text-red-700">
+                  <p className="mt-1 text-sm leading-6 text-red-700">
                     {batchError}
                   </p>
                 </div>
@@ -232,6 +374,7 @@ export default function DocumentUpload() {
               <div
                 className="mt-5 flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4"
                 role="status"
+                translate="no"
               >
                 <CheckCircle2
                   className="mt-0.5 size-5 shrink-0 text-emerald-600"
@@ -240,13 +383,43 @@ export default function DocumentUpload() {
 
                 <div>
                   <p className="text-sm font-bold text-emerald-800">
-                    Batch préparé avec succès
+                    Traitement lancé avec succès
+                  </p>
+
+                  <p className="mt-1 text-sm leading-6 text-emerald-700">
+                    {
+                      acceptedDocumentsCount
+                    }{" "}
+                    document
+                    {acceptedDocumentsCount >
+                    1
+                      ? "s"
+                      : ""}{" "}
+                    accepté
+                    {acceptedDocumentsCount >
+                    1
+                      ? "s"
+                      : ""}{" "}
+                    par le serveur.
+
+                    {rejectedDocumentsCount >
+                      0 &&
+                      ` ${rejectedDocumentsCount} fichier${
+                        rejectedDocumentsCount >
+                        1
+                          ? "s ont"
+                          : " a"
+                      } été rejeté${
+                        rejectedDocumentsCount >
+                        1
+                          ? "s"
+                          : ""
+                      }.`}
                   </p>
 
                   <p className="mt-1 text-sm text-emerald-700">
-                    La simulation contient {validFiles.length} fichier
-                    {validFiles.length > 1 ? "s" : ""} valide
-                    {validFiles.length > 1 ? "s" : ""}.
+                    Le traitement automatique est en cours.
+                    Redirection vers la liste des documents...
                   </p>
                 </div>
               </div>
@@ -256,13 +429,15 @@ export default function DocumentUpload() {
               <Button
                 type="button"
                 variant="outline"
-                disabled={files.length === 0 || isSubmitting}
-                onClick={() => {
-                  setFiles([]);
-                  setBatchError(undefined);
-                  setIsCompleted(false);
-                }}
+                disabled={
+                  files.length === 0 ||
+                  isSubmitting
+                }
+                onClick={
+                  handleClearSelection
+                }
                 className="h-11 rounded-xl border-slate-300"
+                translate="no"
               >
                 Vider la sélection
               </Button>
@@ -270,31 +445,48 @@ export default function DocumentUpload() {
               <Button
                 type="button"
                 disabled={
-                  validFiles.length === 0 ||
+                  validFiles.length ===
+                    0 ||
                   isSubmitting
                 }
-                onClick={handleSubmitBatch}
+                onClick={
+                  handleSubmitBatch
+                }
+                translate="no"
                 className="h-11 rounded-xl bg-blue-600 px-6 font-semibold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700 disabled:pointer-events-none disabled:opacity-50"
               >
-                {isSubmitting ? (
-                  <>
-                    <Loader2
-                      className="size-4 animate-spin"
-                      aria-hidden="true"
-                    />
-
-                    Préparation du batch...
-                  </>
-                ) : (
-                  <>
+                <span
+                  className="flex items-center gap-2"
+                  translate="no"
+                >
+                  <span className="relative block size-4 shrink-0">
                     <UploadCloud
-                      className="size-4"
+                      className={[
+                        "absolute inset-0 size-4 transition-opacity duration-150",
+                        isSubmitting
+                          ? "opacity-0"
+                          : "opacity-100",
+                      ].join(" ")}
                       aria-hidden="true"
                     />
 
-                    Lancer le traitement
-                  </>
-                )}
+                    <Loader2
+                      className={[
+                        "absolute inset-0 size-4 transition-opacity duration-150",
+                        isSubmitting
+                          ? "animate-spin opacity-100"
+                          : "opacity-0",
+                      ].join(" ")}
+                      aria-hidden="true"
+                    />
+                  </span>
+
+                  <span>
+                    {isSubmitting
+                      ? "Envoi et traitement..."
+                      : "Lancer le traitement"}
+                  </span>
+                </span>
               </Button>
             </div>
           </section>
@@ -337,7 +529,9 @@ export default function DocumentUpload() {
                   </dt>
 
                   <dd className="font-bold text-emerald-600">
-                    {validFiles.length}
+                    {
+                      validFiles.length
+                    }
                   </dd>
                 </div>
 
@@ -347,7 +541,8 @@ export default function DocumentUpload() {
                   </dt>
 
                   <dd className="font-bold text-red-600">
-                    {files.length - validFiles.length}
+                    {files.length -
+                      validFiles.length}
                   </dd>
                 </div>
 
@@ -357,7 +552,9 @@ export default function DocumentUpload() {
                   </dt>
 
                   <dd className="font-bold text-blue-600">
-                    {MAX_BATCH_FILES}
+                    {
+                      MAX_BATCH_FILES
+                    }
                   </dd>
                 </div>
               </dl>
@@ -378,8 +575,9 @@ export default function DocumentUpload() {
                   </h2>
 
                   <p className="mt-2 text-sm leading-6 text-slate-600">
-                    Le backend déterminera automatiquement la version, le
-                    groupe documentaire, la langue et le moteur d’extraction.
+                    Le backend déterminera automatiquement la version,
+                    le groupe documentaire, la langue et le moteur
+                    d’extraction.
                   </p>
                 </div>
               </div>

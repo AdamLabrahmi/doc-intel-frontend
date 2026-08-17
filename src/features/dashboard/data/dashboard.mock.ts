@@ -128,12 +128,12 @@ export const processingEvolutionData: readonly ProcessingEvolutionPoint[] = [
 export const extractionDistributionData: readonly ExtractionDistributionPoint[] =
   [
     {
-      name: "Apache Tika",
+      name: "Extraction native",
       value: 72,
       color: "#2563EB",
     },
     {
-      name: "Tesseract OCR",
+      name: "OCR",
       value: 28,
       color: "#06B6D4",
     },

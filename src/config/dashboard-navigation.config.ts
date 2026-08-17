@@ -5,6 +5,7 @@ import {
   Activity,
   Files,
   LayoutDashboard,
+  MessageSquareText,
   Settings,
   UploadCloud,
 } from "lucide-react";
@@ -29,18 +30,23 @@ export const dashboardNavigationItems: readonly DashboardNavigationItem[] = [
     icon: Files,
   },
   {
+    label: "Conversations",
+    path: ROUTES.conversations,
+    icon: MessageSquareText,
+  },
+  {
     label: "Importer",
     path: ROUTES.documentUpload,
     icon: UploadCloud,
   },
   {
     label: "Activité",
-    path: "/dashboard/activity",
+    path: ROUTES.activity,
     icon: Activity,
   },
   {
     label: "Paramètres",
-    path: "/dashboard/settings",
+    path: ROUTES.settings,
     icon: Settings,
   },
 ] as const;

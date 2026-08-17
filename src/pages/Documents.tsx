@@ -2,23 +2,33 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import {
+  AlertCircle,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   CircleAlert,
-  Files,
   Filter,
+  LoaderCircle,
   Plus,
   Search,
 } from "lucide-react";
 
-import { buttonVariants } from "@/components/ui/button";
 import { DocumentsTable } from "@/features/documents/components/DocumentsTable";
-import { documentsMock } from "@/features/documents/data/documents.mock";
+import { useDocumentsQuery } from "@/features/documents/hooks/useDocumentsQuery";
 import type { DocumentStatus } from "@/features/documents/types/document.types";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
-import { cn } from "@/lib/utils";
 import { ROUTES } from "@/routes/routePaths";
 
-type StatusFilter = "ALL" | DocumentStatus;
+type StatusFilter =
+  | "ALL"
+  | DocumentStatus;
+
+type PaginationItem =
+  | number
+  | "ellipsis-start"
+  | "ellipsis-end";
+
+const PAGE_SIZE = 10;
 
 const statusFilterOptions: readonly {
   label: string;
@@ -46,38 +56,231 @@ const statusFilterOptions: readonly {
   },
 ] as const;
 
+function buildPaginationItems(
+  currentPage: number,
+  totalPages: number,
+): PaginationItem[] {
+  if (totalPages <= 7) {
+    return Array.from(
+      {
+        length: totalPages,
+      },
+      (_, index) =>
+        index + 1,
+    );
+  }
+
+  if (currentPage <= 4) {
+    return [
+      1,
+      2,
+      3,
+      4,
+      5,
+      "ellipsis-end",
+      totalPages,
+    ];
+  }
+
+  if (
+    currentPage >=
+    totalPages - 3
+  ) {
+    return [
+      1,
+      "ellipsis-start",
+      totalPages - 4,
+      totalPages - 3,
+      totalPages - 2,
+      totalPages - 1,
+      totalPages,
+    ];
+  }
+
+  return [
+    1,
+    "ellipsis-start",
+    currentPage - 1,
+    currentPage,
+    currentPage + 1,
+    "ellipsis-end",
+    totalPages,
+  ];
+}
+
 export default function Documents() {
-  const shouldReduceMotion = useReducedMotion();
+  const shouldReduceMotion =
+    useReducedMotion();
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] =
-    useState<StatusFilter>("ALL");
+  const [searchTerm, setSearchTerm] =
+    useState("");
 
-  const filteredDocuments = useMemo(() => {
-    const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+  const [
+    statusFilter,
+    setStatusFilter,
+  ] =
+    useState<StatusFilter>(
+      "ALL",
+    );
 
-    return documentsMock.filter((document) => {
-      const matchesSearch =
-        normalizedSearchTerm.length === 0 ||
-        document.fileName.toLowerCase().includes(normalizedSearchTerm) ||
-        document.fileType.toLowerCase().includes(normalizedSearchTerm) ||
-        document.language.toLowerCase().includes(normalizedSearchTerm);
+  const [
+    currentPage,
+    setCurrentPage,
+  ] =
+    useState(1);
 
-      const matchesStatus =
-        statusFilter === "ALL" ||
-        document.status === statusFilter;
+  const {
+    data: documents = [],
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isFetching,
+  } = useDocumentsQuery();
 
-      return matchesSearch && matchesStatus;
-    });
-  }, [searchTerm, statusFilter]);
+  const filteredDocuments =
+    useMemo(() => {
+      const normalizedSearchTerm =
+        searchTerm
+          .trim()
+          .toLowerCase();
 
-  const completedCount = documentsMock.filter(
-    (document) => document.status === "COMPLETED",
-  ).length;
+      return documents.filter(
+        (
+          document,
+        ) => {
+          const matchesSearch =
+            normalizedSearchTerm
+              .length === 0 ||
+            document.fileName
+              .toLowerCase()
+              .includes(
+                normalizedSearchTerm,
+              );
 
-  const failedCount = documentsMock.filter(
-    (document) => document.status === "FAILED",
-  ).length;
+          const matchesStatus =
+            statusFilter === "ALL" ||
+            document.status ===
+              statusFilter;
+
+          return (
+            matchesSearch &&
+            matchesStatus
+          );
+        },
+      );
+    }, [
+      documents,
+      searchTerm,
+      statusFilter,
+    ]);
+
+  const totalPages =
+    Math.max(
+      1,
+      Math.ceil(
+        filteredDocuments.length /
+          PAGE_SIZE,
+      ),
+    );
+
+  const safeCurrentPage =
+    Math.min(
+      currentPage,
+      totalPages,
+    );
+
+  const startIndex =
+    (safeCurrentPage - 1) *
+    PAGE_SIZE;
+
+  const paginatedDocuments =
+    filteredDocuments.slice(
+      startIndex,
+      startIndex + PAGE_SIZE,
+    );
+
+  const paginationItems =
+    buildPaginationItems(
+      safeCurrentPage,
+      totalPages,
+    );
+
+  const displayedStart =
+    filteredDocuments.length === 0
+      ? 0
+      : startIndex + 1;
+
+  const displayedEnd =
+    Math.min(
+      startIndex + PAGE_SIZE,
+      filteredDocuments.length,
+    );
+
+  const completedCount =
+    documents.filter(
+      (document) =>
+        document.status ===
+        "COMPLETED",
+    ).length;
+
+  const failedCount =
+    documents.filter(
+      (document) =>
+        document.status ===
+        "FAILED",
+    ).length;
+
+  const handleSearchChange =
+    (
+      value: string,
+    ) => {
+      setSearchTerm(
+        value,
+      );
+
+      setCurrentPage(
+        1,
+      );
+    };
+
+  const handleStatusChange =
+    (
+      value: StatusFilter,
+    ) => {
+      setStatusFilter(
+        value,
+      );
+
+      setCurrentPage(
+        1,
+      );
+    };
+
+  const handlePageChange =
+    (
+      page: number,
+    ) => {
+      if (
+        page < 1 ||
+        page > totalPages ||
+        page === safeCurrentPage
+      ) {
+        return;
+      }
+
+      setCurrentPage(
+        page,
+      );
+
+      window.scrollTo({
+        top: 0,
+        behavior:
+          shouldReduceMotion
+            ? "auto"
+            : "smooth",
+      });
+    };
 
   return (
     <DashboardLayout>
@@ -95,50 +298,34 @@ export default function Documents() {
           y: 0,
         }}
         transition={{
-          duration: shouldReduceMotion ? 0 : 0.6,
-          ease: [0.22, 1, 0.36, 1],
+          duration:
+            shouldReduceMotion
+              ? 0
+              : 0.6,
+          ease: [
+            0.22,
+            1,
+            0.36,
+            1,
+          ],
         }}
         className="mx-auto w-full max-w-[1600px] space-y-6"
       >
-        <section className="flex flex-col gap-5 rounded-3xl border border-blue-100 bg-gradient-to-br from-white via-blue-50/60 to-cyan-50/50 p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-8">
-          <div>
-            <span className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700">
-              <Files
-                className="size-3.5"
-                aria-hidden="true"
-              />
+        {/* BOUTON IMPORT */}
+        <Link
+          to={
+            ROUTES.documentUpload
+          }
+          aria-label="Importer des documents"
+          className="fixed bottom-6 right-6 z-40 flex size-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg shadow-blue-600/25 transition-all duration-300 hover:scale-105 hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-600/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+        >
+          <Plus
+            className="size-6"
+            aria-hidden="true"
+          />
+        </Link>
 
-              Bibliothèque documentaire
-            </span>
-
-            <h1 className="mt-4 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
-              Documents
-            </h1>
-
-            <p className="mt-2 max-w-2xl leading-7 text-slate-600">
-              Consultez les fichiers importés, leur version, la méthode
-              d’extraction utilisée et l’état de leur traitement.
-            </p>
-          </div>
-
-          <Link
-            to={ROUTES.documentUpload}
-            className={cn(
-              buttonVariants({
-                size: "lg",
-              }),
-              "group h-12 shrink-0 rounded-xl bg-blue-600 px-6 font-semibold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700",
-            )}
-          >
-            <Plus
-              className="size-4"
-              aria-hidden="true"
-            />
-
-            Importer des documents
-          </Link>
-        </section>
-
+        {/* STATISTIQUES */}
         <section className="grid gap-4 sm:grid-cols-3">
           <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-sm font-semibold text-slate-500">
@@ -146,7 +333,9 @@ export default function Documents() {
             </p>
 
             <p className="mt-2 text-3xl font-bold text-slate-950">
-              {documentsMock.length}
+              {isLoading
+                ? "—"
+                : documents.length}
             </p>
           </article>
 
@@ -158,7 +347,9 @@ export default function Documents() {
                 </p>
 
                 <p className="mt-2 text-3xl font-bold text-slate-950">
-                  {completedCount}
+                  {isLoading
+                    ? "—"
+                    : completedCount}
                 </p>
               </div>
 
@@ -177,7 +368,9 @@ export default function Documents() {
                 </p>
 
                 <p className="mt-2 text-3xl font-bold text-slate-950">
-                  {failedCount}
+                  {isLoading
+                    ? "—"
+                    : failedCount}
                 </p>
               </div>
 
@@ -189,6 +382,7 @@ export default function Documents() {
           </article>
         </section>
 
+        {/* RECHERCHE / FILTRE */}
         <section className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:flex-row md:items-center">
           <div className="relative flex-1">
             <Search
@@ -199,11 +393,16 @@ export default function Documents() {
             <input
               type="search"
               value={searchTerm}
-              onChange={(event) => {
-                setSearchTerm(event.target.value);
+              onChange={(
+                event,
+              ) => {
+                handleSearchChange(
+                  event.target.value,
+                );
               }}
-              placeholder="Rechercher par nom, type ou langue..."
+              placeholder="Rechercher par nom de document..."
               className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm text-slate-950 outline-none transition-all placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+              aria-label="Rechercher un document"
             />
           </div>
 
@@ -214,31 +413,304 @@ export default function Documents() {
             />
 
             <select
-              value={statusFilter}
-              onChange={(event) => {
-                setStatusFilter(event.target.value as StatusFilter);
+              value={
+                statusFilter
+              }
+              onChange={(
+                event,
+              ) => {
+                handleStatusChange(
+                  event.target
+                    .value as StatusFilter,
+                );
               }}
               className="h-11 w-full appearance-none rounded-xl border border-slate-200 bg-white pl-11 pr-10 text-sm font-medium text-slate-700 outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
               aria-label="Filtrer les documents par statut"
             >
-              {statusFilterOptions.map((option) => (
-                <option
-                  key={option.value}
-                  value={option.value}
-                >
-                  {option.label}
-                </option>
-              ))}
+              {statusFilterOptions.map(
+                (
+                  option,
+                ) => (
+                  <option
+                    key={
+                      option.value
+                    }
+                    value={
+                      option.value
+                    }
+                  >
+                    {
+                      option.label
+                    }
+                  </option>
+                ),
+              )}
             </select>
           </div>
 
-          <p className="text-sm font-medium text-slate-500">
-            {filteredDocuments.length} résultat
-            {filteredDocuments.length > 1 ? "s" : ""}
-          </p>
+          <div className="flex min-w-fit items-center gap-2">
+            {isFetching &&
+              !isLoading && (
+                <LoaderCircle
+                  className="size-4 animate-spin text-blue-600"
+                  aria-label="Actualisation des documents"
+                />
+              )}
+
+            <p className="text-sm font-medium text-slate-500">
+              {isLoading ? (
+                "Chargement..."
+              ) : (
+                <>
+                  {
+                    filteredDocuments.length
+                  }{" "}
+                  résultat
+                  {filteredDocuments.length >
+                  1
+                    ? "s"
+                    : ""}
+                </>
+              )}
+            </p>
+          </div>
         </section>
 
-        <DocumentsTable documents={filteredDocuments} />
+        {/* LOADING */}
+        {isLoading && (
+          <section
+            className="flex min-h-64 items-center justify-center rounded-3xl border border-slate-200 bg-white shadow-sm"
+            aria-live="polite"
+          >
+            <div className="text-center">
+              <LoaderCircle
+                className="mx-auto size-8 animate-spin text-blue-600"
+                aria-hidden="true"
+              />
+
+              <p className="mt-4 text-sm font-semibold text-slate-700">
+                Chargement des documents...
+              </p>
+
+              <p className="mt-1 text-sm text-slate-500">
+                Récupération des données depuis le serveur.
+              </p>
+            </div>
+          </section>
+        )}
+
+        {/* ERROR */}
+        {isError &&
+          !isLoading && (
+            <section
+              className="rounded-3xl border border-red-200 bg-white p-6 shadow-sm"
+              role="alert"
+            >
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-start gap-3">
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600">
+                    <AlertCircle
+                      className="size-5"
+                      aria-hidden="true"
+                    />
+                  </span>
+
+                  <div>
+                    <h2 className="font-bold text-slate-950">
+                      Impossible de charger les documents
+                    </h2>
+
+                    <p className="mt-1 text-sm text-slate-500">
+                      {error instanceof
+                      Error
+                        ? error.message
+                        : "Une erreur est survenue lors de la communication avec le serveur."}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    void refetch();
+                  }}
+                  disabled={
+                    isFetching
+                  }
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                >
+                  <LoaderCircle
+                    className={`size-4 ${
+                      isFetching
+                        ? "animate-spin"
+                        : ""
+                    }`}
+                    aria-hidden="true"
+                  />
+
+                  Réessayer
+                </button>
+              </div>
+            </section>
+          )}
+
+        {/* TABLE + PAGINATION */}
+        {!isLoading &&
+          !isError && (
+            <div className="space-y-4">
+              <DocumentsTable
+                documents={
+                  paginatedDocuments
+                }
+              />
+
+              {filteredDocuments.length >
+                0 && (
+                <section className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+                  {/* INFORMATIONS */}
+                  <p className="text-sm text-slate-500">
+                    Affichage de{" "}
+                    <span className="font-semibold text-slate-800">
+                      {
+                        displayedStart
+                      }
+                    </span>{" "}
+                    à{" "}
+                    <span className="font-semibold text-slate-800">
+                      {
+                        displayedEnd
+                      }
+                    </span>{" "}
+                    sur{" "}
+                    <span className="font-semibold text-slate-800">
+                      {
+                        filteredDocuments.length
+                      }
+                    </span>{" "}
+                    document
+                    {filteredDocuments.length >
+                    1
+                      ? "s"
+                      : ""}
+                  </p>
+
+                  {/* NAVIGATION */}
+                  <nav
+                    className="flex flex-wrap items-center gap-2"
+                    aria-label="Pagination des documents"
+                  >
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handlePageChange(
+                          safeCurrentPage -
+                            1,
+                        )
+                      }
+                      disabled={
+                        safeCurrentPage ===
+                        1
+                      }
+                      className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition-all hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-slate-200 disabled:hover:bg-white disabled:hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                    >
+                      <ChevronLeft
+                        className="size-4"
+                        aria-hidden="true"
+                      />
+
+                      <span className="hidden sm:inline">
+                        Précédent
+                      </span>
+                    </button>
+
+                    <div className="flex items-center gap-1">
+                      {paginationItems.map(
+                        (
+                          item,
+                        ) => {
+                          if (
+                            item ===
+                              "ellipsis-start" ||
+                            item ===
+                              "ellipsis-end"
+                          ) {
+                            return (
+                              <span
+                                key={
+                                  item
+                                }
+                                className="flex size-10 items-center justify-center text-sm font-semibold text-slate-400"
+                                aria-hidden="true"
+                              >
+                                …
+                              </span>
+                            );
+                          }
+
+                          const isActive =
+                            item ===
+                            safeCurrentPage;
+
+                          return (
+                            <button
+                              key={
+                                item
+                              }
+                              type="button"
+                              onClick={() =>
+                                handlePageChange(
+                                  item,
+                                )
+                              }
+                              aria-current={
+                                isActive
+                                  ? "page"
+                                  : undefined
+                              }
+                              aria-label={`Page ${item}`}
+                              className={
+                                isActive
+                                  ? "flex size-10 items-center justify-center rounded-xl bg-blue-600 text-sm font-bold text-white shadow-sm shadow-blue-600/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                                  : "flex size-10 items-center justify-center rounded-xl border border-transparent text-sm font-semibold text-slate-600 transition-all hover:border-slate-200 hover:bg-slate-50 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                              }
+                            >
+                              {
+                                item
+                              }
+                            </button>
+                          );
+                        },
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handlePageChange(
+                          safeCurrentPage +
+                            1,
+                        )
+                      }
+                      disabled={
+                        safeCurrentPage ===
+                        totalPages
+                      }
+                      className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition-all hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-slate-200 disabled:hover:bg-white disabled:hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                    >
+                      <span className="hidden sm:inline">
+                        Suivant
+                      </span>
+
+                      <ChevronRight
+                        className="size-4"
+                        aria-hidden="true"
+                      />
+                    </button>
+                  </nav>
+                </section>
+              )}
+            </div>
+          )}
       </motion.div>
     </DashboardLayout>
   );

@@ -3,7 +3,9 @@ import { motion, useReducedMotion } from "framer-motion";
 import type {
   DashboardStat,
   DashboardStatTone,
-} from "@/features/dashboard/data/dashboard.mock";
+} from "@/features/dashboard/types/dashboard.types";
+
+
 import { cn } from "@/lib/utils";
 
 interface DashboardStatCardProps {

@@ -5,13 +5,17 @@ import {
 } from "react-router-dom";
 
 import Dashboard from "@/pages/Dashboard";
+import DocumentDetails from "@/pages/DocumentDetails";
+import DocumentQuestions from "@/pages/DocumentQuestions";
 import Documents from "@/pages/Documents";
 import DocumentUpload from "@/pages/DocumentUpload";
 import Home from "@/pages/Home";
 import Login from "@/pages/Login";
 import Profile from "@/pages/Profile";
 import Register from "@/pages/Register";
+import Conversations from "@/pages/Conversations";
 import { ProtectedRoute } from "@/routes/ProtectedRoute";
+import ConversationDetail from "@/pages/ConversationDetail";
 import { ROUTES } from "@/routes/routePaths";
 
 function TemporaryPage({
@@ -60,7 +64,7 @@ export function AppRouter() {
         }
       />
 
-      {/* Routes privées */}
+      
       <Route
         path={ROUTES.dashboard}
         element={
@@ -98,24 +102,42 @@ export function AppRouter() {
       />
 
       <Route
-        path={ROUTES.activity}
+        path="/documents/:documentId"
         element={
           <ProtectedRoute>
-            <TemporaryPage title="Activité" />
+            <DocumentDetails />
           </ProtectedRoute>
         }
       />
 
       <Route
-        path={ROUTES.settings}
+        path="/documents/:documentId/questions"
         element={
           <ProtectedRoute>
-            <TemporaryPage title="Paramètres" />
+            <DocumentQuestions />
           </ProtectedRoute>
         }
       />
 
-      {/* Route inconnue */}
+      <Route
+  path={ROUTES.conversations}
+  element={
+    <ProtectedRoute>
+      <Conversations />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path={ROUTES.conversationDetail}
+  element={
+    <ProtectedRoute>
+      <ConversationDetail />
+    </ProtectedRoute>
+  }
+/>
+
+
       <Route
         path="*"
         element={

@@ -126,7 +126,7 @@ function SidebarContent({
       </nav>
 
       <div className="shrink-0 border-t border-slate-100 p-4">
-        <section
+        {/* <section
           className="mb-3 rounded-2xl border border-blue-100 bg-blue-50/70 p-4"
           aria-labelledby="minio-storage-title"
         >
@@ -158,7 +158,7 @@ function SidebarContent({
             <span>68,4 Go utilisés</span>
             <span>100 Go</span>
           </div>
-        </section>
+        </section> */}
 
         <button
           type="button"
