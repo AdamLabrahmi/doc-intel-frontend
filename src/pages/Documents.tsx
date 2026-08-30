@@ -11,8 +11,11 @@ import {
   LoaderCircle,
   Plus,
   Search,
+  ShieldCheck,
+  UserRound,
 } from "lucide-react";
 
+import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import { DocumentsTable } from "@/features/documents/components/DocumentsTable";
 import { useDocumentsQuery } from "@/features/documents/hooks/useDocumentsQuery";
 import type { DocumentStatus } from "@/features/documents/types/document.types";
@@ -111,6 +114,13 @@ function buildPaginationItems(
 export default function Documents() {
   const shouldReduceMotion =
     useReducedMotion();
+
+  const {
+    user,
+    isAdmin,
+    isLoading:
+      isCurrentUserLoading,
+  } = useCurrentUser();
 
   const [searchTerm, setSearchTerm] =
     useState("");
@@ -311,7 +321,6 @@ export default function Documents() {
         }}
         className="mx-auto w-full max-w-[1600px] space-y-6"
       >
-        {/* BOUTON IMPORT */}
         <Link
           to={
             ROUTES.documentUpload
@@ -325,7 +334,57 @@ export default function Documents() {
           />
         </Link>
 
-        {/* STATISTIQUES */}
+        {!isCurrentUserLoading &&
+        user ? (
+          <section className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-4">
+              <span
+                className={
+                  isAdmin
+                    ? "flex size-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-700"
+                    : "flex size-12 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-600"
+                }
+              >
+                {isAdmin ? (
+                  <ShieldCheck
+                    className="size-5"
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <UserRound
+                    className="size-5"
+                    aria-hidden="true"
+                  />
+                )}
+              </span>
+
+              <div>
+                <h1 className="text-xl font-bold tracking-tight text-slate-950">
+                  Documents
+                </h1>
+
+                <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500">
+                  {isAdmin
+                    ? "Vous consultez l’ensemble des documents enregistrés sur la plateforme."
+                    : "Vous consultez uniquement les documents associés à votre compte."}
+                </p>
+              </div>
+            </div>
+
+            <span
+              className={
+                isAdmin
+                  ? "w-fit rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700"
+                  : "w-fit rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-600"
+              }
+            >
+              {isAdmin
+                ? "Vue globale"
+                : "Espace personnel"}
+            </span>
+          </section>
+        ) : null}
+
         <section className="grid gap-4 sm:grid-cols-3">
           <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-sm font-semibold text-slate-500">
@@ -382,7 +441,6 @@ export default function Documents() {
           </article>
         </section>
 
-        {/* RECHERCHE / FILTRE */}
         <section className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:flex-row md:items-center">
           <div className="relative flex-1">
             <Search
@@ -393,9 +451,7 @@ export default function Documents() {
             <input
               type="search"
               value={searchTerm}
-              onChange={(
-                event,
-              ) => {
+              onChange={(event) => {
                 handleSearchChange(
                   event.target.value,
                 );
@@ -416,9 +472,7 @@ export default function Documents() {
               value={
                 statusFilter
               }
-              onChange={(
-                event,
-              ) => {
+              onChange={(event) => {
                 handleStatusChange(
                   event.target
                     .value as StatusFilter,
@@ -428,9 +482,7 @@ export default function Documents() {
               aria-label="Filtrer les documents par statut"
             >
               {statusFilterOptions.map(
-                (
-                  option,
-                ) => (
+                (option) => (
                   <option
                     key={
                       option.value
@@ -476,7 +528,6 @@ export default function Documents() {
           </div>
         </section>
 
-        {/* LOADING */}
         {isLoading && (
           <section
             className="flex min-h-64 items-center justify-center rounded-3xl border border-slate-200 bg-white shadow-sm"
@@ -499,7 +550,6 @@ export default function Documents() {
           </section>
         )}
 
-        {/* ERROR */}
         {isError &&
           !isLoading && (
             <section
@@ -554,7 +604,6 @@ export default function Documents() {
             </section>
           )}
 
-        {/* TABLE + PAGINATION */}
         {!isLoading &&
           !isError && (
             <div className="space-y-4">
@@ -567,7 +616,6 @@ export default function Documents() {
               {filteredDocuments.length >
                 0 && (
                 <section className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
-                  {/* INFORMATIONS */}
                   <p className="text-sm text-slate-500">
                     Affichage de{" "}
                     <span className="font-semibold text-slate-800">
@@ -594,7 +642,6 @@ export default function Documents() {
                       : ""}
                   </p>
 
-                  {/* NAVIGATION */}
                   <nav
                     className="flex flex-wrap items-center gap-2"
                     aria-label="Pagination des documents"
@@ -611,7 +658,7 @@ export default function Documents() {
                         safeCurrentPage ===
                         1
                       }
-                      className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition-all hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-slate-200 disabled:hover:bg-white disabled:hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                      className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition-all hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
                     >
                       <ChevronLeft
                         className="size-4"
@@ -625,9 +672,7 @@ export default function Documents() {
 
                     <div className="flex items-center gap-1">
                       {paginationItems.map(
-                        (
-                          item,
-                        ) => {
+                        (item) => {
                           if (
                             item ===
                               "ellipsis-start" ||
@@ -695,7 +740,7 @@ export default function Documents() {
                         safeCurrentPage ===
                         totalPages
                       }
-                      className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition-all hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-slate-200 disabled:hover:bg-white disabled:hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                      className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition-all hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
                     >
                       <span className="hidden sm:inline">
                         Suivant

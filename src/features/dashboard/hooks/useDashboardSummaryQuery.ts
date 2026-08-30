@@ -1,20 +1,59 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 
-import { getDashboardSummary } from "@/features/dashboard/api/dashboard.api";
+import { useDocumentsQuery } from "@/features/documents/hooks/useDocumentsQuery";
 
-export const dashboardQueryKeys = {
-  all: ["dashboard"] as const,
-  summary: ["dashboard", "summary"] as const,
-};
+import type {
+  DashboardSummaryDto,
+} from "@/features/dashboard/types/dashboard.types";
 
 export function useDashboardSummaryQuery() {
- return useQuery({
-  queryKey: dashboardQueryKeys.summary,
-  queryFn: getDashboardSummary,
+  const {
+    data: documents = [],
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isFetching,
+  } = useDocumentsQuery();
 
-  // Temporaire :
-  // l'endpoint backend /api/dashboard/summary
-  // n'est pas encore implémenté.
-  enabled: false,
-});
+  const dashboardSummary =
+    useMemo<DashboardSummaryDto>(() => {
+      const totalDocuments =
+        documents.length;
+
+      const completedDocuments =
+        documents.filter(
+          (document) =>
+            document.status === "COMPLETED",
+        ).length;
+
+      const pendingDocuments =
+        documents.filter(
+          (document) =>
+            document.status === "PENDING" ||
+            document.status === "PROCESSING",
+        ).length;
+
+      const failedDocuments =
+        documents.filter(
+          (document) =>
+            document.status === "FAILED",
+        ).length;
+
+      return {
+        totalDocuments,
+        completedDocuments,
+        pendingDocuments,
+        failedDocuments,
+      };
+    }, [documents]);
+
+  return {
+    data: dashboardSummary,
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isFetching,
+  };
 }

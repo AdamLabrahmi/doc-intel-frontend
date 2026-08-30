@@ -6,10 +6,7 @@ import type {
   DocumentExtractedTextDto,
   DocumentExtractionDto,
   DocumentListItem,
-  ProcessDocumentBatchResultDto,
-  DocumentQuestionAnswerDto,
-  DocumentQuestionRequestDto,
-  DocumentConversationDto,
+  ProcessDocumentBatchResultDto
 } from "@/features/documents/types/document.types";
 
 
@@ -109,25 +106,5 @@ export async function getDocumentAiHistory(
       `/api/documents/${documentId}/ai-history`,
     );
 
-  return response.data;
-}
-
-export async function askDocumentQuestion(
-  documentId: number,
-  request: DocumentQuestionRequestDto,
-): Promise<DocumentQuestionAnswerDto> {
-  const response =
-    await httpClient.post<DocumentQuestionAnswerDto>(
-      `/api/documents/${documentId}/ask`,
-      request,
-    );
-
-  return response.data;
-}
-
-export async function getDocumentConversation(documentId : number,): Promise<DocumentConversationDto> {
-  const response = await httpClient.get<DocumentConversationDto>(
-    `/api/documents/${documentId}/conversation`,
-  );
   return response.data;
 }

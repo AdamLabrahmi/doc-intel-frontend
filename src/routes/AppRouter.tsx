@@ -14,9 +14,20 @@ import Login from "@/pages/Login";
 import Profile from "@/pages/Profile";
 import Register from "@/pages/Register";
 import Conversations from "@/pages/Conversations";
-import { ProtectedRoute } from "@/routes/ProtectedRoute";
 import ConversationDetail from "@/pages/ConversationDetail";
-import { ROUTES } from "@/routes/routePaths";
+import Users from "@/pages/Users";
+
+import {
+  ProtectedRoute,
+} from "@/routes/ProtectedRoute";
+
+import {
+  AdminRoute,
+} from "@/routes/AdminRoute";
+
+import {
+  ROUTES,
+} from "@/routes/routePaths";
 
 function TemporaryPage({
   title,
@@ -64,7 +75,7 @@ export function AppRouter() {
         }
       />
 
-      
+      {/* Routes protégées */}
       <Route
         path={ROUTES.dashboard}
         element={
@@ -120,23 +131,32 @@ export function AppRouter() {
       />
 
       <Route
-  path={ROUTES.conversations}
-  element={
-    <ProtectedRoute>
-      <Conversations />
-    </ProtectedRoute>
-  }
-/>
+        path={ROUTES.conversations}
+        element={
+          <ProtectedRoute>
+            <Conversations />
+          </ProtectedRoute>
+        }
+      />
 
-<Route
-  path={ROUTES.conversationDetail}
-  element={
-    <ProtectedRoute>
-      <ConversationDetail />
-    </ProtectedRoute>
-  }
-/>
+      <Route
+        path={ROUTES.conversationDetail}
+        element={
+          <ProtectedRoute>
+            <ConversationDetail />
+          </ProtectedRoute>
+        }
+      />
 
+      {/* Route ADMIN uniquement */}
+      <Route
+        path={ROUTES.users}
+        element={
+          <AdminRoute>
+            <Users />
+          </AdminRoute>
+        }
+      />
 
       <Route
         path="*"

@@ -2,18 +2,94 @@ import {
   CalendarDays,
   CheckCircle2,
   FileText,
+  RefreshCw,
   ShieldCheck,
 } from "lucide-react";
 
-import type { UserProfile } from "@/features/profile/data/profile.mock";
+import type {
+  AuthenticatedUserDto,
+} from "@/features/auth/types/authenticated-user.types";
 
 interface ProfileOverviewProps {
-  profile: UserProfile;
+  profile: AuthenticatedUserDto;
+  documentsCount: number;
+  completedDocumentsCount: number;
+}
+
+function formatDate(
+  value: string,
+): string {
+  const date =
+    new Date(value);
+
+  if (
+    Number.isNaN(
+      date.getTime(),
+    )
+  ) {
+    return "Date inconnue";
+  }
+
+  return new Intl.DateTimeFormat(
+    "fr-FR",
+    {
+      dateStyle: "medium",
+      timeStyle: "short",
+    },
+  ).format(date);
+}
+
+function resolveRoleLabel(
+  role: AuthenticatedUserDto["role"],
+): string {
+  if (role === "ADMIN") {
+    return "Administrateur";
+  }
+
+  return "Utilisateur";
+}
+
+function resolveInitials(
+  fullName: string,
+): string {
+  const parts =
+    fullName
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+
+  if (parts.length === 0) {
+    return "U";
+  }
+
+  if (parts.length === 1) {
+    return parts[0]
+      .slice(0, 2)
+      .toUpperCase();
+  }
+
+  return (
+    parts[0].charAt(0) +
+    parts[parts.length - 1]
+      .charAt(0)
+  ).toUpperCase();
 }
 
 export function ProfileOverview({
   profile,
+  documentsCount,
+  completedDocumentsCount,
 }: ProfileOverviewProps) {
+  const initials =
+    resolveInitials(
+      profile.fullName,
+    );
+
+  const roleLabel =
+    resolveRoleLabel(
+      profile.role,
+    );
+
   return (
     <aside className="space-y-6">
       <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
@@ -21,14 +97,14 @@ export function ProfileOverview({
 
         <div className="px-6 pb-6">
           <div className="-mt-12 flex size-24 items-center justify-center rounded-3xl border-4 border-white bg-gradient-to-br from-blue-600 to-blue-700 text-2xl font-bold text-white shadow-xl shadow-blue-600/20">
-            {profile.initials}
+            {initials}
           </div>
 
           <h2 className="mt-5 text-xl font-bold text-slate-950">
             {profile.fullName}
           </h2>
 
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 break-all text-sm text-slate-500">
             {profile.email}
           </p>
 
@@ -38,7 +114,7 @@ export function ProfileOverview({
               aria-hidden="true"
             />
 
-            {profile.role}
+            {roleLabel}
           </span>
         </div>
       </section>
@@ -63,14 +139,16 @@ export function ProfileOverview({
               </p>
 
               <p className="mt-1 text-sm font-bold text-slate-900">
-                {profile.createdAt}
+                {formatDate(
+                  profile.createdAt,
+                )}
               </p>
             </div>
           </div>
 
           <div className="flex items-start gap-3">
             <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-              <CheckCircle2
+              <RefreshCw
                 className="size-4"
                 aria-hidden="true"
               />
@@ -78,11 +156,13 @@ export function ProfileOverview({
 
             <div>
               <p className="text-xs text-slate-500">
-                Dernière connexion
+                Dernière mise à jour
               </p>
 
               <p className="mt-1 text-sm font-bold text-slate-900">
-                {profile.lastLoginAt}
+                {formatDate(
+                  profile.updatedAt,
+                )}
               </p>
             </div>
           </div>
@@ -99,7 +179,7 @@ export function ProfileOverview({
           </span>
 
           <p className="mt-4 text-2xl font-bold text-slate-950">
-            {profile.documentsCount}
+            {documentsCount}
           </p>
 
           <p className="mt-1 text-xs leading-5 text-slate-500">
@@ -116,7 +196,9 @@ export function ProfileOverview({
           </span>
 
           <p className="mt-4 text-2xl font-bold text-slate-950">
-            {profile.completedDocumentsCount}
+            {
+              completedDocumentsCount
+            }
           </p>
 
           <p className="mt-1 text-xs leading-5 text-slate-500">

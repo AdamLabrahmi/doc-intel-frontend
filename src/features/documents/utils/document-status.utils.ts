@@ -13,11 +13,11 @@ export function mapDocumentStatus(
       return "PENDING";
 
     case "PROCESSING":
+    case "EXTRACTED":
     case "INDEXING_QUEUED":
     case "INDEXING":
       return "PROCESSING";
 
-    case "EXTRACTED":
     case "INDEXED":
       return "COMPLETED";
 

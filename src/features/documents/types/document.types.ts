@@ -169,67 +169,67 @@ export type DocumentAiHistoryDto =
   DocumentAiHistoryItemDto[];
 
 
-  export interface DocumentQuestionRequestDto {
-  question: string;
-}
+//   export interface DocumentQuestionRequestDto {
+//   question: string;
+// }
 
-export interface DocumentQuestionSourceDto {
-  chunkId: number;
-  documentId: number;
-  chunkIndex: number;
-  text: string;
+// export interface DocumentQuestionSourceDto {
+//   chunkId: number;
+//   documentId: number;
+//   chunkIndex: number;
+//   text: string;
 
-  pageNumber: number | null;
-  tokenCount: number;
+//   pageNumber: number | null;
+//   tokenCount: number;
 
-  similarityScore: number;
-}
+//   similarityScore: number;
+// }
 
-export interface DocumentQuestionAnswerDto {
-  documentId: number;
+// export interface DocumentQuestionAnswerDto {
+//   documentId: number;
 
-  question: string;
-  answer: string;
+//   question: string;
+//   answer: string;
 
-  generationModel: string | null;
+//   generationModel: string | null;
 
-  requestedTopK: number;
-  retrievedChunkCount: number;
+//   requestedTopK: number;
+//   retrievedChunkCount: number;
 
-  contextFound: boolean;
+//   contextFound: boolean;
 
-  durationMs: number;
+//   durationMs: number;
 
-  sources: DocumentQuestionSourceDto[];
-}
+//   sources: DocumentQuestionSourceDto[];
+// }
 
 
 
-export type DocumentConversationMessageRole =
-  | "USER"
-  | "ASSISTANT";
+// export type DocumentConversationMessageRole =
+//   | "USER"
+//   | "ASSISTANT";
 
-export interface DocumentConversationMessageDto {
-  id: number;
-  conversationId: number;
-  role: DocumentConversationMessageRole;
-  content: string;
+// export interface DocumentConversationMessageDto {
+//   id: number;
+//   conversationId: number;
+//   role: DocumentConversationMessageRole;
+//   content: string;
 
-  sourcesJson: string | null;
+//   sourcesJson: string | null;
 
-  generationModel: string | null;
-  durationMs: number | null;
+//   generationModel: string | null;
+//   durationMs: number | null;
 
-  createdAt: string;
-}
+//   createdAt: string;
+// }
 
-export interface DocumentConversationDto {
-  conversationId: number;
-  documentId: number;
-  userId: number | null;
+// export interface DocumentConversationDto {
+//   conversationId: number;
+//   documentId: number;
+//   userId: number | null;
 
-  createdAt: string;
-  updatedAt: string;
+//   createdAt: string;
+//   updatedAt: string;
 
-  messages: DocumentConversationMessageDto[];
-}
+//   messages: DocumentConversationMessageDto[];
+// }

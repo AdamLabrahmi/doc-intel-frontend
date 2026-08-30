@@ -21,3 +21,23 @@ export interface DashboardSummaryDto {
   pendingDocuments: number;
   failedDocuments: number;
 }
+
+export interface DashboardProcessingEvolutionDto {
+  date: string;
+  importedDocuments: number;
+  completedDocuments: number;
+}
+
+export type DashboardExtractionMethod =
+  | "TIKA"
+  | "TESSERACT";
+
+export interface DashboardExtractionDistributionDto {
+  extractionMethod: DashboardExtractionMethod;
+  count: number;
+}
+
+export interface DashboardAnalyticsDto {
+  processingEvolution: DashboardProcessingEvolutionDto[];
+  extractionDistribution: DashboardExtractionDistributionDto[];
+}

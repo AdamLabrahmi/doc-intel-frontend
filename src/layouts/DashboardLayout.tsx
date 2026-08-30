@@ -2,10 +2,18 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useNavigate } from "react-router-dom";
 
-import { DashboardHeader } from "@/components/navigation/DashboardHeader";
-import { DashboardSidebar } from "@/components/navigation/DashboardSidebar";
+import {
+  DashboardHeader,
+} from "@/components/navigation/DashboardHeader";
+
+import {
+  DashboardSidebar,
+} from "@/components/navigation/DashboardSidebar";
+
+import {
+  logoutCurrentUser,
+} from "@/features/auth/services/logout.service";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -14,31 +22,41 @@ interface DashboardLayoutProps {
 export function DashboardLayout({
   children,
 }: DashboardLayoutProps) {
-  const navigate = useNavigate();
+  const [
+    isMobileSidebarOpen,
+    setIsMobileSidebarOpen,
+  ] = useState(false);
 
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] =
-    useState(false);
-
-  const handleLogout = () => {
-    console.log("Déconnexion statique");
-
-    navigate("/login");
-  };
+  const handleLogout =
+    async () => {
+      await logoutCurrentUser();
+    };
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-950">
       <DashboardSidebar
-        isMobileOpen={isMobileSidebarOpen}
+        isMobileOpen={
+          isMobileSidebarOpen
+        }
         onMobileClose={() => {
-          setIsMobileSidebarOpen(false);
+          setIsMobileSidebarOpen(
+            false,
+          );
         }}
-        onLogout={handleLogout}
+        onLogout={() => {
+          void handleLogout();
+        }}
       />
 
       <div className="min-h-screen lg:pl-72">
         <DashboardHeader
           onOpenSidebar={() => {
-            setIsMobileSidebarOpen(true);
+            setIsMobileSidebarOpen(
+              true,
+            );
+          }}
+          onLogout={() => {
+            void handleLogout();
           }}
         />
 

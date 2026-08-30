@@ -1,4 +1,3 @@
-import { Link, NavLink } from "react-router-dom";
 import {
   AnimatePresence,
   motion,
@@ -7,11 +6,21 @@ import {
 import {
   BrainCircuit,
   ChevronLeft,
+  LoaderCircle,
   LogOut,
   X,
 } from "lucide-react";
+import {
+  Link,
+  NavLink,
+} from "react-router-dom";
 
-import { dashboardNavigationItems } from "@/config/dashboard-navigation.config";
+import {
+  dashboardNavigationItems,
+} from "@/config/dashboard-navigation.config";
+import {
+  useCurrentUser,
+} from "@/features/auth/hooks/useCurrentUser";
 import { cn } from "@/lib/utils";
 
 interface DashboardSidebarProps {
@@ -31,6 +40,30 @@ function SidebarContent({
   onLogout,
   showCloseButton = false,
 }: SidebarContentProps) {
+  const {
+    user,
+    isLoading,
+    isError,
+  } = useCurrentUser();
+
+  /*
+   * Tant que le profil utilisateur n'est
+   * pas chargé, aucun rôle n'est supposé.
+   *
+   * On évite surtout de considérer
+   * automatiquement un utilisateur inconnu
+   * comme ADMIN.
+   */
+  const visibleNavigationItems =
+    user
+      ? dashboardNavigationItems.filter(
+          (item) =>
+            item.roles.includes(
+              user.role,
+            ),
+        )
+      : [];
+
   return (
     <div className="flex h-full flex-col bg-white">
       <div className="flex h-20 shrink-0 items-center justify-between border-b border-slate-100 px-5">
@@ -81,84 +114,99 @@ function SidebarContent({
           Espace de travail
         </p>
 
-        <div className="space-y-1.5">
-          {dashboardNavigationItems.map((item) => {
-            const Icon = item.icon;
+        {isLoading ? (
+          <div className="flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-medium text-slate-500">
+            <span className="flex size-9 items-center justify-center rounded-lg bg-slate-100">
+              <LoaderCircle
+                className="size-4 animate-spin"
+                aria-hidden="true"
+              />
+            </span>
 
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                end={item.end}
-                onClick={onNavigation}
-                className={({ isActive }) =>
-                  cn(
-                    "group flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-semibold transition-all duration-200",
-                    isActive
-                      ? "bg-blue-50 text-blue-700 shadow-sm"
-                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-950",
-                  )
-                }
-              >
-                {({ isActive }) => (
-                  <>
-                    <span
-                      className={cn(
-                        "flex size-9 shrink-0 items-center justify-center rounded-lg transition-colors",
+            Chargement...
+          </div>
+        ) : null}
+
+        {isError ? (
+          <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3">
+            <p className="text-xs font-semibold leading-5 text-red-700">
+              Impossible de charger les droits
+              de navigation.
+            </p>
+          </div>
+        ) : null}
+
+        {!isLoading &&
+        !isError &&
+        user ? (
+          <div className="space-y-1.5">
+            {visibleNavigationItems.map(
+              (item) => {
+                const Icon =
+                  item.icon;
+
+                return (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    end={item.end}
+                    onClick={onNavigation}
+                    className={({
+                      isActive,
+                    }) =>
+                      cn(
+                        "group flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-semibold transition-all duration-200",
                         isActive
-                          ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
-                          : "bg-slate-100 text-slate-500 group-hover:bg-white",
-                      )}
-                    >
-                      <Icon
-                        className="size-4"
-                        aria-hidden="true"
-                      />
-                    </span>
+                          ? "bg-blue-50 text-blue-700 shadow-sm"
+                          : "text-slate-600 hover:bg-slate-100 hover:text-slate-950",
+                      )
+                    }
+                  >
+                    {({
+                      isActive,
+                    }) => (
+                      <>
+                        <span
+                          className={cn(
+                            "flex size-9 shrink-0 items-center justify-center rounded-lg transition-colors",
+                            isActive
+                              ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
+                              : "bg-slate-100 text-slate-500 group-hover:bg-white",
+                          )}
+                        >
+                          <Icon
+                            className="size-4"
+                            aria-hidden="true"
+                          />
+                        </span>
 
-                    <span>{item.label}</span>
-                  </>
-                )}
-              </NavLink>
-            );
-          })}
-        </div>
+                        <span>
+                          {item.label}
+                        </span>
+                      </>
+                    )}
+                  </NavLink>
+                );
+              },
+            )}
+          </div>
+        ) : null}
       </nav>
 
       <div className="shrink-0 border-t border-slate-100 p-4">
-        {/* <section
-          className="mb-3 rounded-2xl border border-blue-100 bg-blue-50/70 p-4"
-          aria-labelledby="minio-storage-title"
-        >
-          <div className="flex items-center justify-between gap-3">
-            <p
-              id="minio-storage-title"
-              className="text-sm font-bold text-slate-950"
-            >
-              Stockage MinIO
+        {user ? (
+          <div className="mb-3 rounded-xl bg-slate-50 px-3.5 py-3">
+            <p className="truncate text-xs font-bold text-slate-900">
+              {user.fullName}
             </p>
 
-            <span className="text-xs font-bold text-blue-600">
-              68 %
-            </span>
+            <p className="mt-1 text-[11px] font-semibold text-blue-600">
+              {user.role === "ADMIN"
+                ? "Administrateur"
+                : "Utilisateur"}
+            </p>
           </div>
-
-          <div
-            className="mt-3 h-2 overflow-hidden rounded-full bg-blue-100"
-            role="progressbar"
-            aria-label="Espace de stockage MinIO utilisé"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={68}
-          >
-            <div className="h-full w-[68%] rounded-full bg-gradient-to-r from-blue-600 to-cyan-400" />
-          </div>
-
-          <div className="mt-2 flex items-center justify-between gap-3 text-xs text-slate-500">
-            <span>68,4 Go utilisés</span>
-            <span>100 Go</span>
-          </div>
-        </section> */}
+        ) : null}
 
         <button
           type="button"
@@ -172,7 +220,9 @@ function SidebarContent({
             />
           </span>
 
-          <span>Se déconnecter</span>
+          <span>
+            Se déconnecter
+          </span>
 
           <ChevronLeft
             className="ml-auto size-4"
@@ -189,19 +239,20 @@ export function DashboardSidebar({
   onMobileClose,
   onLogout,
 }: DashboardSidebarProps) {
-  const shouldReduceMotion = useReducedMotion();
+  const shouldReduceMotion =
+    useReducedMotion();
 
   return (
     <>
-      {/* Sidebar desktop : toujours visible à partir de lg */}
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 border-r border-slate-200 bg-white lg:block">
         <SidebarContent
-          onNavigation={() => undefined}
+          onNavigation={() =>
+            undefined
+          }
           onLogout={onLogout}
         />
       </aside>
 
-      {/* Sidebar mobile : affichée et animée uniquement sous lg */}
       <AnimatePresence>
         {isMobileOpen && (
           <>
@@ -221,9 +272,14 @@ export function DashboardSidebar({
                 opacity: 0,
               }}
               transition={{
-                duration: shouldReduceMotion ? 0 : 0.2,
+                duration:
+                  shouldReduceMotion
+                    ? 0
+                    : 0.2,
               }}
-              onClick={onMobileClose}
+              onClick={
+                onMobileClose
+              }
               className="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-sm lg:hidden"
               aria-label="Fermer le menu latéral"
             />
@@ -234,7 +290,7 @@ export function DashboardSidebar({
                   ? false
                   : {
                       x: "-100%",
-                  }
+                    }
               }
               animate={{
                 x: 0,
@@ -243,14 +299,26 @@ export function DashboardSidebar({
                 x: "-100%",
               }}
               transition={{
-                duration: shouldReduceMotion ? 0 : 0.3,
-                ease: [0.22, 1, 0.36, 1],
+                duration:
+                  shouldReduceMotion
+                    ? 0
+                    : 0.3,
+                ease: [
+                  0.22,
+                  1,
+                  0.36,
+                  1,
+                ],
               }}
               className="fixed inset-y-0 left-0 z-50 w-[min(18rem,calc(100vw-2rem))] border-r border-slate-200 bg-white shadow-2xl shadow-slate-950/15 lg:hidden"
             >
               <SidebarContent
-                onNavigation={onMobileClose}
-                onLogout={onLogout}
+                onNavigation={
+                  onMobileClose
+                }
+                onLogout={
+                  onLogout
+                }
                 showCloseButton
               />
             </motion.aside>

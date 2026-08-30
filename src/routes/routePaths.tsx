@@ -10,14 +10,18 @@ export const ROUTES = {
   documents: "/documents",
   documentUpload: "/documents/upload",
 
-  documentDetails: (documentId: number | string) => `/documents/${documentId}`,
+  documentDetails: (documentId: number | string) =>
+    `/documents/${documentId}`,
 
-  documentQuestions: (documentId: number | string) =>`/documents/${documentId}/questions`,
+  documentQuestions: (documentId: number | string) =>
+    `/documents/${documentId}/questions`,
 
-  conversations : "/conversations",
+  conversations: "/conversations",
 
-  conversationDetail: "/conversations/:documentId",
-  
+  conversationDetail: "/conversations/:conversationId",
+
+  users: "/users",
+
   activity: "/dashboard/activity",
   settings: "/dashboard/settings",
 } as const;

@@ -1,25 +1,43 @@
-import { useQuery } from "@tanstack/react-query";
+import {
+  useQuery,
+} from "@tanstack/react-query";
 
 import {
+  getConversationById,
   getConversations,
   getDocumentConversation,
 } from "@/features/conversations/api/conversation.api";
 
 export const conversationQueryKeys = {
-  all: ["conversations"] as const,
+  all:
+    ["conversations"] as const,
 
-  detail: (documentId: number) =>
+  byDocument: (
+    documentId: number,
+  ) =>
     [
       ...conversationQueryKeys.all,
       "document",
       documentId,
     ] as const,
+
+  byId: (
+    conversationId: number,
+  ) =>
+    [
+      ...conversationQueryKeys.all,
+      "conversation",
+      conversationId,
+    ] as const,
 };
 
 export function useConversations() {
   return useQuery({
-    queryKey: conversationQueryKeys.all,
-    queryFn: getConversations,
+    queryKey:
+      conversationQueryKeys.all,
+
+    queryFn:
+      getConversations,
   });
 }
 
@@ -28,7 +46,7 @@ export function useDocumentConversation(
 ) {
   return useQuery({
     queryKey:
-      conversationQueryKeys.detail(
+      conversationQueryKeys.byDocument(
         documentId,
       ),
 
@@ -38,7 +56,31 @@ export function useDocumentConversation(
       ),
 
     enabled:
-      Number.isInteger(documentId) &&
+      Number.isInteger(
+        documentId,
+      ) &&
       documentId > 0,
+  });
+}
+
+export function useConversationById(
+  conversationId: number,
+) {
+  return useQuery({
+    queryKey:
+      conversationQueryKeys.byId(
+        conversationId,
+      ),
+
+    queryFn: () =>
+      getConversationById(
+        conversationId,
+      ),
+
+    enabled:
+      Number.isInteger(
+        conversationId,
+      ) &&
+      conversationId > 0,
   });
 }
