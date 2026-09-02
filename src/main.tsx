@@ -1,7 +1,11 @@
-import { StrictMode } from "react";
+import {
+  StrictMode,
+} from "react";
+
 import {
   createRoot,
 } from "react-dom/client";
+
 import {
   QueryClientProvider,
 } from "@tanstack/react-query";
@@ -10,19 +14,56 @@ import "./index.css";
 
 import App from "./App.tsx";
 
-import { keycloak } from "@/config/keycloak.config";
+import {
+  keycloak,
+} from "@/config/keycloak.config";
+
 import {
   clearAuthTokens,
   getAuthTokens,
   saveAuthTokens,
 } from "@/features/auth/services/auth-token-storage.service";
-import { queryClient } from "@/lib/query-client";
+
+import {
+  initializeApplicationTheme,
+} from "@/features/settings/services/theme-bootstrap.service";
+
+import {
+  initializeSettingsForUser,
+  resetSettingsForAnonymousUser,
+} from "@/stores/settings.store";
+
+import {
+  queryClient,
+} from "@/lib/query-client";
+
+function initializeAuthenticatedUserSettings(): void {
+  const keycloakUserId =
+    keycloak.tokenParsed
+      ?.sub;
+
+  if (
+    keycloak.authenticated &&
+    typeof keycloakUserId ===
+      "string" &&
+    keycloakUserId.trim()
+      .length >
+      0
+  ) {
+    initializeSettingsForUser(
+      keycloakUserId,
+    );
+
+    return;
+  }
+
+  resetSettingsForAnonymousUser();
+}
 
 async function initializeKeycloak() {
   const storedTokens =
     getAuthTokens();
 
- 
   if (storedTokens) {
     try {
       const authenticated =
@@ -43,7 +84,6 @@ async function initializeKeycloak() {
             "S256",
         });
 
-      
       if (!authenticated) {
         clearAuthTokens();
       }
@@ -59,7 +99,6 @@ async function initializeKeycloak() {
     }
   }
 
- 
   await keycloak.init({
     onLoad:
       "check-sso",
@@ -73,7 +112,6 @@ async function initializeKeycloak() {
 }
 
 function configureKeycloakCallbacks() {
- 
   keycloak.onAuthRefreshSuccess =
     () => {
       if (
@@ -91,18 +129,49 @@ function configureKeycloakCallbacks() {
             keycloak.idToken,
         });
       }
+
+      /*
+       * Normalement le sub ne change pas
+       * pendant un refresh.
+       *
+       * Cette réinitialisation protège tout
+       * de même contre un changement
+       * inattendu d'identité.
+       */
+      initializeAuthenticatedUserSettings();
+
+      initializeApplicationTheme();
     };
 
   keycloak.onAuthLogout =
     () => {
       clearAuthTokens();
+
       queryClient.clear();
+
+      /*
+       * Très important :
+       * on retire immédiatement de la
+       * mémoire React les préférences du
+       * compte précédent.
+       *
+       * Elles restent toutefois conservées
+       * dans son localStorage personnel.
+       */
+      resetSettingsForAnonymousUser();
+
+      initializeApplicationTheme();
     };
 
   keycloak.onAuthRefreshError =
     () => {
       clearAuthTokens();
+
       queryClient.clear();
+
+      resetSettingsForAnonymousUser();
+
+      initializeApplicationTheme();
     };
 }
 
@@ -110,7 +179,22 @@ async function bootstrapApplication() {
   try {
     configureKeycloakCallbacks();
 
+    /*
+     * 1. On identifie d'abord l'utilisateur.
+     */
     await initializeKeycloak();
+
+    /*
+     * 2. Ensuite seulement on charge
+     *    SES paramètres.
+     */
+    initializeAuthenticatedUserSettings();
+
+    /*
+     * 3. Enfin on applique son thème et
+     *    on active l'écoute du thème système.
+     */
+    initializeApplicationTheme();
 
     const rootElement =
       document.getElementById(
@@ -128,7 +212,9 @@ async function bootstrapApplication() {
     ).render(
       <StrictMode>
         <QueryClientProvider
-          client={queryClient}
+          client={
+            queryClient
+          }
         >
           <App />
         </QueryClientProvider>
@@ -139,6 +225,15 @@ async function bootstrapApplication() {
       "Impossible d'initialiser Keycloak.",
       error,
     );
+
+    /*
+     * Si l'authentification échoue, aucune
+     * préférence d'un utilisateur précédent
+     * ne doit rester active.
+     */
+    resetSettingsForAnonymousUser();
+
+    initializeApplicationTheme();
 
     const rootElement =
       document.getElementById(

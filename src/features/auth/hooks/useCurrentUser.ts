@@ -1,4 +1,6 @@
-import { useAuthenticatedUserQuery } from "@/features/auth/hooks/useAuthenticatedUserQuery";
+import {
+  useAuthenticatedUserQuery,
+} from "@/features/auth/hooks/useAuthenticatedUserQuery";
 
 export function useCurrentUser() {
   const query =
@@ -8,10 +10,12 @@ export function useCurrentUser() {
     query.data ?? null;
 
   const isAdmin =
-    user?.role === "ADMIN";
+    user?.role ===
+    "ADMIN";
 
   const isUser =
-    user?.role === "USER";
+    user?.role ===
+    "USER";
 
   return {
     ...query,

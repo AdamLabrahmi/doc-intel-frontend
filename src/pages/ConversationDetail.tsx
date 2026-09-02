@@ -15,8 +15,6 @@ import {
   ArrowLeft,
   BookOpenText,
   Bot,
-  Clock3,
-  FileText,
   LoaderCircle,
   MessageSquareText,
   RefreshCw,
@@ -63,6 +61,10 @@ import {
   ROUTES,
 } from "@/routes/routePaths";
 
+import {
+  useSettingsStore,
+} from "@/stores/settings.store";
+
 const MAX_QUESTION_LENGTH =
   2_000;
 
@@ -73,7 +75,9 @@ function formatDate(
   value: string,
 ): string {
   const date =
-    new Date(value);
+    new Date(
+      value,
+    );
 
   if (
     Number.isNaN(
@@ -86,31 +90,15 @@ function formatDate(
   return new Intl.DateTimeFormat(
     "fr-FR",
     {
-      dateStyle: "medium",
-      timeStyle: "short",
+      dateStyle:
+        "medium",
+
+      timeStyle:
+        "short",
     },
-  ).format(date);
-}
-
-function formatDuration(
-  durationMs: number | null,
-): string | null {
-  if (
-    durationMs === null ||
-    durationMs < 0
-  ) {
-    return null;
-  }
-
-  if (
-    durationMs < 1_000
-  ) {
-    return `${durationMs} ms`;
-  }
-
-  return `${(
-    durationMs / 1_000
-  ).toFixed(1)} s`;
+  ).format(
+    date,
+  );
 }
 
 function normalizeSummaryCommand(
@@ -121,7 +109,9 @@ function normalizeSummaryCommand(
     .toLocaleLowerCase(
       "fr-FR",
     )
-    .normalize("NFD")
+    .normalize(
+      "NFD",
+    )
     .replace(
       /[\u0300-\u036f]/g,
       "",
@@ -161,7 +151,7 @@ function AssistantMarkdown({
   content: string;
 }) {
   return (
-    <div className="break-words text-sm leading-6 text-slate-800">
+    <div className="break-words text-sm leading-6 text-slate-800 dark:text-slate-200">
       <ReactMarkdown
         remarkPlugins={[
           remarkGfm,
@@ -170,7 +160,7 @@ function AssistantMarkdown({
           h1: ({
             children,
           }) => (
-            <h1 className="mb-3 mt-5 text-lg font-bold text-slate-950 first:mt-0">
+            <h1 className="mb-3 mt-5 text-lg font-bold text-slate-950 first:mt-0 dark:text-white">
               {children}
             </h1>
           ),
@@ -178,7 +168,7 @@ function AssistantMarkdown({
           h2: ({
             children,
           }) => (
-            <h2 className="mb-2.5 mt-5 text-base font-bold text-slate-950 first:mt-0">
+            <h2 className="mb-2.5 mt-5 text-base font-bold text-slate-950 first:mt-0 dark:text-white">
               {children}
             </h2>
           ),
@@ -186,7 +176,7 @@ function AssistantMarkdown({
           h3: ({
             children,
           }) => (
-            <h3 className="mb-2 mt-4 text-sm font-bold text-slate-900 first:mt-0">
+            <h3 className="mb-2 mt-4 text-sm font-bold text-slate-900 first:mt-0 dark:text-slate-100">
               {children}
             </h3>
           ),
@@ -202,7 +192,7 @@ function AssistantMarkdown({
           strong: ({
             children,
           }) => (
-            <strong className="font-bold text-slate-950">
+            <strong className="font-bold text-slate-950 dark:text-white">
               {children}
             </strong>
           ),
@@ -210,7 +200,7 @@ function AssistantMarkdown({
           em: ({
             children,
           }) => (
-            <em className="italic text-slate-700">
+            <em className="italic text-slate-700 dark:text-slate-300">
               {children}
             </em>
           ),
@@ -242,7 +232,7 @@ function AssistantMarkdown({
           blockquote: ({
             children,
           }) => (
-            <blockquote className="my-3 border-l-4 border-blue-200 bg-blue-50/50 px-4 py-2 text-slate-700">
+            <blockquote className="my-3 rounded-r-xl border-l-4 border-blue-200 bg-blue-50/60 px-4 py-2 text-slate-700 dark:border-blue-500/50 dark:bg-blue-500/10 dark:text-slate-300">
               {children}
             </blockquote>
           ),
@@ -250,13 +240,13 @@ function AssistantMarkdown({
           code: ({
             children,
           }) => (
-            <code className="rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-[0.9em] text-slate-800">
+            <code className="rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-[0.9em] text-slate-800 dark:bg-slate-800 dark:text-slate-200">
               {children}
             </code>
           ),
 
           hr: () => (
-            <hr className="my-4 border-slate-200" />
+            <hr className="my-4 border-slate-200 dark:border-slate-700" />
           ),
 
           a: ({
@@ -264,12 +254,10 @@ function AssistantMarkdown({
             href,
           }) => (
             <a
-              href={
-                href
-              }
+              href={href}
               target="_blank"
               rel="noreferrer noopener"
-              className="font-medium text-blue-600 underline decoration-blue-200 underline-offset-2 hover:text-blue-700"
+              className="font-medium text-blue-600 underline decoration-blue-200 underline-offset-2 hover:text-blue-700 dark:text-blue-400 dark:decoration-blue-500/40 dark:hover:text-blue-300"
             >
               {children}
             </a>
@@ -286,23 +274,45 @@ export default function ConversationDetail() {
   const shouldReduceMotion =
     useReducedMotion();
 
+  const conversationAutoScroll =
+    useSettingsStore(
+      (
+        state,
+      ) =>
+        state.conversationAutoScroll,
+    );
+
+  const showConversationSources =
+    useSettingsStore(
+      (
+        state,
+      ) =>
+        state.showConversationSources,
+    );
+
   const [
     question,
     setQuestion,
   ] =
-    useState("");
+    useState(
+      "",
+    );
 
   const [
     isSummaryRunning,
     setIsSummaryRunning,
   ] =
-    useState(false);
+    useState(
+      false,
+    );
 
   const [
     summaryStartMessageCount,
     setSummaryStartMessageCount,
   ] =
-    useState<number | null>(
+    useState<
+      number | null
+    >(
       null,
     );
 
@@ -319,12 +329,14 @@ export default function ConversationDetail() {
 
   const {
     conversationId,
-  } = useParams<{
-    conversationId: string;
-  }>();
+  } =
+    useParams<{
+      conversationId: string;
+    }>();
 
   const parsedConversationId =
-    conversationId !== undefined
+    conversationId !==
+    undefined
       ? Number(
           conversationId,
         )
@@ -334,7 +346,8 @@ export default function ConversationDetail() {
     Number.isInteger(
       parsedConversationId,
     ) &&
-    parsedConversationId > 0;
+    parsedConversationId >
+      0;
 
   const queryConversationId =
     isValidConversationId
@@ -342,11 +355,17 @@ export default function ConversationDetail() {
       : 0;
 
   const {
-    data: conversation,
+    data:
+      conversation,
+
     isLoading,
+
     isError,
+
     error,
+
     refetch,
+
     isFetching,
   } =
     useConversationById(
@@ -358,8 +377,10 @@ export default function ConversationDetail() {
     0;
 
   const isConversationOwner =
-    user !== null &&
-    conversation !== undefined &&
+    user !==
+      null &&
+    conversation !==
+      undefined &&
     conversation.userId ===
       user.id;
 
@@ -377,106 +398,133 @@ export default function ConversationDetail() {
     useRequestDocumentSummary();
 
   const isSending =
-    askQuestionMutation
-      .isPending ||
-    summaryMutation
-      .isPending;
+    askQuestionMutation.isPending ||
+    summaryMutation.isPending;
 
   const isBusy =
     isSending ||
     isSummaryRunning;
 
-  useEffect(() => {
-    const container =
-      messagesContainerRef.current;
+  /*
+   * Scroll automatique configurable depuis Settings.
+   */
+  useEffect(
+    () => {
+      if (
+        !conversationAutoScroll
+      ) {
+        return;
+      }
 
-    if (!container) {
-      return;
-    }
+      const container =
+        messagesContainerRef.current;
 
-    container.scrollTo({
-      top:
-        container.scrollHeight,
+      if (
+        !container
+      ) {
+        return;
+      }
 
-      behavior:
-        shouldReduceMotion
-          ? "auto"
-          : "smooth",
-    });
-  }, [
-    conversation?.messages.length,
-    isBusy,
-    shouldReduceMotion,
-  ]);
+      container.scrollTo({
+        top:
+          container.scrollHeight,
 
-  useEffect(() => {
-    if (
-      !isSummaryRunning ||
-      summaryStartMessageCount ===
-        null
-    ) {
-      return;
-    }
+        behavior:
+          shouldReduceMotion
+            ? "auto"
+            : "smooth",
+      });
+    },
+    [
+      conversation?.messages.length,
+      isBusy,
+      shouldReduceMotion,
+      conversationAutoScroll,
+    ],
+  );
 
-    const intervalId =
-      window.setInterval(
-        () => {
-          void refetch();
-        },
-        SUMMARY_POLLING_INTERVAL_MS,
+  /*
+   * Polling du résumé asynchrone.
+   */
+  useEffect(
+    () => {
+      if (
+        !isSummaryRunning ||
+        summaryStartMessageCount ===
+          null
+      ) {
+        return;
+      }
+
+      const intervalId =
+        window.setInterval(
+          () => {
+            void refetch();
+          },
+          SUMMARY_POLLING_INTERVAL_MS,
+        );
+
+      return () => {
+        window.clearInterval(
+          intervalId,
+        );
+      };
+    },
+    [
+      isSummaryRunning,
+      summaryStartMessageCount,
+      refetch,
+    ],
+  );
+
+  /*
+   * Détection de la fin du résumé.
+   */
+  useEffect(
+    () => {
+      if (
+        !isSummaryRunning ||
+        !conversation ||
+        summaryStartMessageCount ===
+          null
+      ) {
+        return;
+      }
+
+      const newMessages =
+        conversation.messages.slice(
+          summaryStartMessageCount,
+        );
+
+      const hasNewAssistantMessage =
+        newMessages.some(
+          (
+            message,
+          ) =>
+            message.role ===
+            "ASSISTANT",
+        );
+
+      if (
+        !hasNewAssistantMessage
+      ) {
+        return;
+      }
+
+      setIsSummaryRunning(
+        false,
       );
 
-    return () => {
-      window.clearInterval(
-        intervalId,
+      setSummaryStartMessageCount(
+        null,
       );
-    };
-  }, [
-    isSummaryRunning,
-    summaryStartMessageCount,
-    refetch,
-  ]);
-
-  useEffect(() => {
-    if (
-      !isSummaryRunning ||
-      !conversation ||
-      summaryStartMessageCount ===
-        null
-    ) {
-      return;
-    }
-
-    const newMessages =
-      conversation.messages.slice(
-        summaryStartMessageCount,
-      );
-
-    const hasNewAssistantMessage =
-      newMessages.some(
-        (message) =>
-          message.role ===
-          "ASSISTANT",
-      );
-
-    if (
-      !hasNewAssistantMessage
-    ) {
-      return;
-    }
-
-    setIsSummaryRunning(
-      false,
-    );
-
-    setSummaryStartMessageCount(
-      null,
-    );
-  }, [
-    conversation,
-    isSummaryRunning,
-    summaryStartMessageCount,
-  ]);
+    },
+    [
+      conversation,
+      isSummaryRunning,
+      summaryStartMessageCount,
+    ],
+  );
 
   const normalizedQuestion =
     question.trim();
@@ -510,15 +558,17 @@ export default function ConversationDetail() {
         );
 
       try {
-        if (summaryRequest) {
+        if (
+          summaryRequest
+        ) {
           const messageCountBeforeRequest =
-            conversation?.messages
-              .length ??
+            conversation
+              ?.messages.length ??
             0;
 
           const response =
-            await summaryMutation
-              .mutateAsync({
+            await summaryMutation.mutateAsync(
+              {
                 documentId:
                   conversationDocumentId,
 
@@ -526,9 +576,12 @@ export default function ConversationDetail() {
                   request:
                     normalizedQuestion,
                 },
-              });
+              },
+            );
 
-          setQuestion("");
+          setQuestion(
+            "",
+          );
 
           if (
             response.status ===
@@ -550,15 +603,18 @@ export default function ConversationDetail() {
           return;
         }
 
-        await askQuestionMutation
-          .mutateAsync({
+        await askQuestionMutation.mutateAsync(
+          {
             question:
               normalizedQuestion,
-          });
+          },
+        );
 
-        setQuestion("");
+        setQuestion(
+          "",
+        );
       } catch {
-        // Les erreurs restent exposées par TanStack Query.
+        // Les erreurs sont exposées par TanStack Query.
       }
     };
 
@@ -582,13 +638,19 @@ export default function ConversationDetail() {
           shouldReduceMotion
             ? false
             : {
-                opacity: 0,
-                y: 16,
+                opacity:
+                  0,
+
+                y:
+                  16,
               }
         }
         animate={{
-          opacity: 1,
-          y: 0,
+          opacity:
+            1,
+
+          y:
+            0,
         }}
         transition={{
           duration:
@@ -606,14 +668,14 @@ export default function ConversationDetail() {
         className="mx-auto flex h-[calc(100vh-7rem)] w-full max-w-[1600px] flex-col gap-4 overflow-hidden"
       >
         <header className="shrink-0">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="flex items-start gap-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex min-w-0 items-center gap-4">
               <Link
                 to={
                   ROUTES.conversations
                 }
                 aria-label="Retour aux conversations"
-                className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition-all hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-blue-500/40 dark:hover:bg-blue-500/10 dark:hover:text-blue-400 dark:focus-visible:ring-offset-slate-950"
               >
                 <ArrowLeft
                   className="size-5"
@@ -622,17 +684,8 @@ export default function ConversationDetail() {
               </Link>
 
               <div className="min-w-0">
-                <div className="flex items-center gap-2 text-sm font-semibold text-blue-600">
-                  <MessageSquareText
-                    className="size-4"
-                    aria-hidden="true"
-                  />
-
-                  Chat documentaire
-                </div>
-
                 <h1
-                  className="mt-2 max-w-4xl truncate text-3xl font-bold tracking-tight text-slate-950"
+                  className="max-w-4xl truncate text-2xl font-bold tracking-tight text-slate-950 dark:text-white"
                   title={
                     conversation
                       ?.documentFileName
@@ -642,56 +695,68 @@ export default function ConversationDetail() {
                     ?.documentFileName ??
                     "Conversation documentaire"}
                 </h1>
-
-                <p className="mt-2 text-sm leading-6 text-slate-500">
-                  {isAdmin
-                    ? "Consultez l’historique de cette conversation documentaire."
-                    : "Posez vos questions et consultez l’historique des réponses générées à partir du document."}
-                </p>
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => {
-                void refetch();
-              }}
-              disabled={
-                isFetching ||
-                isBusy
-              }
-              className="inline-flex h-11 items-center justify-center gap-2 self-start rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <RefreshCw
-                className={`size-4 ${
-                  isFetching
-                    ? "animate-spin"
-                    : ""
-                }`}
-                aria-hidden="true"
-              />
+            <div className="flex flex-wrap items-center gap-3 lg:shrink-0">
+              {!isLoading &&
+              !isError &&
+              conversation ? (
+                <div className="inline-flex h-10 items-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-3.5 text-sm font-semibold text-blue-700 dark:border-blue-900/50 dark:bg-blue-500/10 dark:text-blue-400">
+                  <MessageSquareText
+                    className="size-4"
+                    aria-hidden="true"
+                  />
 
-              Actualiser
-            </button>
+                  {
+                    conversation.messages.length
+                  }{" "}
+                  message
+                  {conversation.messages.length >
+                  1
+                    ? "s"
+                    : ""}
+                </div>
+              ) : null}
+
+              <button
+                type="button"
+                onClick={() => {
+                  void refetch();
+                }}
+                disabled={
+                  isFetching ||
+                  isBusy
+                }
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-600 shadow-sm transition-all hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-blue-500/40 dark:hover:bg-blue-500/10 dark:hover:text-blue-400 dark:focus-visible:ring-offset-slate-950"
+              >
+                <RefreshCw
+                  className={`size-4 ${
+                    isFetching
+                      ? "animate-spin"
+                      : ""
+                  }`}
+                  aria-hidden="true"
+                />
+
+                Actualiser
+              </button>
+            </div>
           </div>
         </header>
 
         {isLoading ? (
-          <section className="flex min-h-0 flex-1 items-center justify-center rounded-3xl border border-slate-200 bg-white shadow-sm">
+          <section className="flex min-h-0 flex-1 items-center justify-center rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <div className="flex flex-col items-center text-center">
-              <div className="flex size-12 items-center justify-center rounded-2xl bg-blue-50">
+              <div className="flex size-12 items-center justify-center rounded-2xl bg-blue-50 dark:bg-blue-500/10">
                 <LoaderCircle
-                  className="size-6 animate-spin text-blue-600"
+                  className="size-6 animate-spin text-blue-600 dark:text-blue-400"
                   aria-hidden="true"
                 />
               </div>
 
-              <p className="mt-4 text-sm font-semibold text-slate-700">
+              <p className="mt-4 text-sm font-semibold text-slate-700 dark:text-slate-300">
                 Chargement de la conversation...
-              </p>
-
-              <p className="mt-1 text-sm text-slate-500">
-                Récupération de l’historique des messages.
               </p>
             </div>
           </section>
@@ -700,22 +765,22 @@ export default function ConversationDetail() {
         {isError ? (
           <section
             role="alert"
-            className="shrink-0 rounded-3xl border border-red-200 bg-red-50/60 p-6"
+            className="shrink-0 rounded-3xl border border-red-200 bg-red-50/60 p-6 dark:border-red-900/50 dark:bg-red-950/25"
           >
             <div className="flex items-start gap-4">
-              <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-red-100">
+              <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-red-100 dark:bg-red-500/10">
                 <AlertCircle
-                  className="size-5 text-red-600"
+                  className="size-5 text-red-600 dark:text-red-400"
                   aria-hidden="true"
                 />
               </div>
 
               <div>
-                <h2 className="font-bold text-slate-950">
+                <h2 className="font-bold text-slate-950 dark:text-white">
                   Impossible de charger la conversation
                 </h2>
 
-                <p className="mt-1 text-sm leading-6 text-slate-600">
+                <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-400">
                   {error instanceof
                   Error
                     ? error.message
@@ -751,226 +816,153 @@ export default function ConversationDetail() {
         {!isLoading &&
         !isError &&
         conversation ? (
-          <>
-            <section className="grid shrink-0 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="flex size-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                    <MessageSquareText
-                      className="size-5"
-                      aria-hidden="true"
-                    />
-                  </div>
-
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                      Conversation
-                    </p>
-
-                    <p className="mt-1 font-bold text-slate-950">
-                      #
-                      {
-                        conversation.conversationId
-                      }
-                    </p>
-                  </div>
+          <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex shrink-0 items-center justify-between gap-4 border-b border-slate-100 bg-white px-5 py-3.5 dark:border-slate-800 dark:bg-slate-900 sm:px-6">
+              <div className="flex items-center gap-3">
+                <div className="flex size-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
+                  <MessageSquareText
+                    className="size-4"
+                    aria-hidden="true"
+                  />
                 </div>
-              </article>
 
-              <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="flex size-10 items-center justify-center rounded-xl bg-cyan-50 text-cyan-600">
-                    <FileText
-                      className="size-5"
-                      aria-hidden="true"
-                    />
-                  </div>
+                <div>
+                  <h2 className="text-sm font-bold text-slate-950 dark:text-white">
+                    Historique
+                  </h2>
 
-                  <div className="min-w-0">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                      Document
-                    </p>
-
-                    <p
-                      className="mt-1 max-w-xs truncate font-bold text-slate-950"
-                      title={
-                        conversation.documentFileName
-                      }
-                    >
-                      {
-                        conversation.documentFileName
-                      }
-                    </p>
-                  </div>
-                </div>
-              </article>
-
-              <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="flex size-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
-                    <MessageSquareText
-                      className="size-5"
-                      aria-hidden="true"
-                    />
-                  </div>
-
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                      Messages
-                    </p>
-
-                    <p className="mt-1 font-bold text-slate-950">
-                      {
-                        conversation
-                          .messages
-                          .length
-                      }
-                    </p>
-                  </div>
-                </div>
-              </article>
-            </section>
-
-            <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-              <div className="shrink-0 border-b border-slate-100 px-6 py-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex size-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                    <MessageSquareText
-                      className="size-5"
-                      aria-hidden="true"
-                    />
-                  </div>
-
-                  <div>
-                    <h2 className="font-bold text-slate-950">
-                      Historique
-                    </h2>
-
-                    <p className="mt-0.5 text-sm text-slate-500">
-                      Créée le{" "}
-                      {formatDate(
-                        conversation.createdAt,
-                      )}
-                    </p>
-                  </div>
+                  <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
+                    Conversation documentaire
+                  </p>
                 </div>
               </div>
 
-              {conversation
-                .messages.length ===
-              0 ? (
-                <div className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto p-8 text-center">
-                  <div className="max-w-sm">
-                    <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
-                      <MessageSquareText
-                        className="size-7"
-                        aria-hidden="true"
-                      />
-                    </div>
+              {isAdmin ? (
+                <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 dark:border-blue-900/50 dark:bg-blue-500/10 dark:text-blue-400">
+                  <ShieldCheck
+                    className="size-3.5"
+                    aria-hidden="true"
+                  />
 
-                    <h3 className="mt-5 text-lg font-bold text-slate-950">
-                      Aucun message
-                    </h3>
-
-                    <p className="mt-2 text-sm leading-6 text-slate-500">
-                      Cette conversation ne contient encore aucun message.
-                    </p>
-                  </div>
+                  Lecture seule
                 </div>
-              ) : (
-                <div
-                  ref={
-                    messagesContainerRef
-                  }
-                  className="min-h-0 flex-1 space-y-6 overflow-y-auto bg-slate-50/40 p-6 lg:p-8"
-                >
-                  {conversation.messages.map(
-                    (
-                      message,
-                    ) => {
-                      const isUser =
-                        message.role ===
-                        "USER";
+              ) : null}
+            </div>
 
-                      const duration =
-                        formatDuration(
-                          message.durationMs,
-                        );
+            {conversation.messages.length ===
+            0 ? (
+              <div className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto p-8 text-center">
+                <div className="max-w-sm">
+                  <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
+                    <MessageSquareText
+                      className="size-7"
+                      aria-hidden="true"
+                    />
+                  </div>
 
-                      const sources =
-                        isUser
-                          ? []
-                          : parseConversationSources(
-                              message.sourcesJson,
-                            );
+                  <h3 className="mt-5 text-lg font-bold text-slate-950 dark:text-white">
+                    Aucun message
+                  </h3>
 
-                      return (
+                  <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                    Cette conversation ne contient encore aucun message.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div
+                ref={
+                  messagesContainerRef
+                }
+                className="min-h-0 flex-1 space-y-5 overflow-y-auto bg-slate-50/40 px-4 py-6 dark:bg-slate-950/40 sm:px-6 lg:px-8"
+              >
+                {conversation.messages.map(
+                  (
+                    message,
+                  ) => {
+                    const isUser =
+                      message.role ===
+                      "USER";
+
+                    const sources =
+                      isUser
+                        ? []
+                        : parseConversationSources(
+                            message.sourcesJson,
+                          );
+
+                    return (
+                      <div
+                        key={
+                          message.id
+                        }
+                        className={`flex ${
+                          isUser
+                            ? "justify-end"
+                            : "justify-start"
+                        }`}
+                      >
                         <div
-                          key={
-                            message.id
-                          }
-                          className={`flex ${
+                          className={`flex w-full max-w-[90%] items-start gap-3 sm:max-w-[82%] lg:max-w-[74%] ${
                             isUser
-                              ? "justify-end"
-                              : "justify-start"
+                              ? "flex-row-reverse"
+                              : ""
                           }`}
                         >
                           <div
-                            className={`flex max-w-[85%] items-start gap-3 lg:max-w-[75%] ${
+                            className={`flex size-9 shrink-0 items-center justify-center rounded-xl shadow-sm ${
                               isUser
-                                ? "flex-row-reverse"
-                                : ""
+                                ? "bg-blue-600 text-white"
+                                : "border border-slate-200 bg-white text-blue-600 dark:border-slate-700 dark:bg-slate-800 dark:text-blue-400"
                             }`}
                           >
+                            {isUser ? (
+                              <User
+                                className="size-4"
+                                aria-hidden="true"
+                              />
+                            ) : (
+                              <Bot
+                                className="size-4"
+                                aria-hidden="true"
+                              />
+                            )}
+                          </div>
+
+                          <div className="min-w-0 flex-1">
                             <div
-                              className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${
+                              className={`mb-1.5 flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500 ${
                                 isUser
-                                  ? "bg-blue-600 text-white"
-                                  : "border border-slate-200 bg-white text-blue-600"
+                                  ? "justify-end"
+                                  : ""
                               }`}
                             >
-                              {isUser ? (
-                                <User
-                                  className="size-4"
-                                  aria-hidden="true"
-                                />
-                              ) : (
-                                <Bot
-                                  className="size-4"
-                                  aria-hidden="true"
-                                />
-                              )}
+                              <span className="font-semibold text-slate-500 dark:text-slate-400">
+                                {isUser
+                                  ? isAdmin
+                                    ? "Utilisateur"
+                                    : "Vous"
+                                  : "Assistant IA"}
+                              </span>
+
+                              <span>
+                                ·
+                              </span>
+
+                              <span>
+                                {formatDate(
+                                  message.createdAt,
+                                )}
+                              </span>
                             </div>
 
                             <div
-                              className={`min-w-0 rounded-2xl px-4 py-3 ${
+                              className={`rounded-2xl px-4 py-3.5 ${
                                 isUser
-                                  ? "rounded-tr-md bg-blue-600 text-white shadow-sm shadow-blue-600/10"
-                                  : "rounded-tl-md border border-slate-200 bg-white text-slate-800 shadow-sm"
+                                  ? "rounded-tr-md bg-blue-600 text-white shadow-sm shadow-blue-600/15"
+                                  : "rounded-tl-md border border-slate-200 bg-white text-slate-800 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
                               }`}
                             >
-                              <div
-                                className={`mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs ${
-                                  isUser
-                                    ? "text-blue-100"
-                                    : "text-slate-400"
-                                }`}
-                              >
-                                <span className="font-semibold">
-                                  {isUser
-                                    ? isAdmin
-                                      ? "Utilisateur"
-                                      : "Vous"
-                                    : "Assistant IA"}
-                                </span>
-
-                                <span>
-                                  {formatDate(
-                                    message.createdAt,
-                                  )}
-                                </span>
-                              </div>
-
                               {isUser ? (
                                 <p className="whitespace-pre-wrap break-words text-sm leading-6">
                                   {
@@ -986,47 +978,21 @@ export default function ConversationDetail() {
                               )}
 
                               {!isUser &&
-                              (message.generationModel ||
-                                duration) ? (
-                                <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3 text-xs text-slate-400">
-                                  {message.generationModel ? (
-                                    <span className="rounded-lg bg-slate-50 px-2 py-1 font-medium">
-                                      {
-                                        message.generationModel
-                                      }
-                                    </span>
-                                  ) : null}
-
-                                  {duration ? (
-                                    <span className="inline-flex items-center gap-1">
-                                      <Clock3
-                                        className="size-3.5"
-                                        aria-hidden="true"
-                                      />
-
-                                      {
-                                        duration
-                                      }
-                                    </span>
-                                  ) : null}
-                                </div>
-                              ) : null}
-
-                              {!isUser &&
+                              showConversationSources &&
                               sources.length >
                                 0 ? (
-                                <div className="mt-4 border-t border-slate-100 pt-4">
+                                <div className="mt-4 border-t border-slate-100 pt-4 dark:border-slate-700">
                                   <div className="mb-3 flex items-center gap-2">
                                     <BookOpenText
-                                      className="size-4 text-blue-600"
+                                      className="size-4 text-blue-600 dark:text-blue-400"
                                       aria-hidden="true"
                                     />
 
-                                    <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                                    <p className="text-xs font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-slate-400">
                                       Sources
                                     </p>
 
-                                    <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700">
+                                    <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700 dark:bg-blue-500/10 dark:text-blue-400">
                                       {
                                         sources.length
                                       }
@@ -1043,9 +1009,9 @@ export default function ConversationDetail() {
                                           key={
                                             source.chunkId
                                           }
-                                          className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50/70"
+                                          className="group/source overflow-hidden rounded-xl border border-slate-200 bg-slate-50/70 dark:border-slate-700 dark:bg-slate-900/70"
                                         >
-                                          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-blue-50 hover:text-blue-700">
+                                          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3.5 py-2.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:text-slate-300 dark:hover:bg-blue-500/10 dark:hover:text-blue-400">
                                             <span>
                                               Source{" "}
                                               {sourceIndex +
@@ -1057,39 +1023,17 @@ export default function ConversationDetail() {
                                                 : ""}
                                             </span>
 
-                                            <span className="text-[11px] font-medium text-slate-400">
-                                              Chunk #
-                                              {
-                                                source.chunkIndex
-                                              }
+                                            <span className="text-slate-400 transition-transform group-open/source:rotate-180 dark:text-slate-500">
+                                              ⌄
                                             </span>
                                           </summary>
 
-                                          <div className="border-t border-slate-200 bg-white px-3 py-3">
-                                            <p className="whitespace-pre-wrap break-words text-xs leading-5 text-slate-600">
+                                          <div className="border-t border-slate-200 bg-white px-3.5 py-3 dark:border-slate-700 dark:bg-slate-800">
+                                            <p className="whitespace-pre-wrap break-words text-xs leading-5 text-slate-600 dark:text-slate-300">
                                               {
                                                 source.text
                                               }
                                             </p>
-
-                                            <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-slate-400">
-                                              <span>
-                                                Chunk ID #
-                                                {
-                                                  source.chunkId
-                                                }
-                                              </span>
-
-                                              {source.tokenCount !==
-                                              null ? (
-                                                <span>
-                                                  {
-                                                    source.tokenCount
-                                                  }{" "}
-                                                  tokens
-                                                </span>
-                                              ) : null}
-                                            </div>
                                           </div>
                                         </details>
                                       ),
@@ -1100,324 +1044,268 @@ export default function ConversationDetail() {
                             </div>
                           </div>
                         </div>
-                      );
-                    },
-                  )}
-
-                  {canAskQuestions &&
-                  askQuestionMutation
-                    .isPending ? (
-                    <div className="flex justify-start">
-                      <div className="flex max-w-[85%] items-start gap-3 lg:max-w-[75%]">
-                        <div className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-white text-blue-600">
-                          <Bot
-                            className="size-4"
-                            aria-hidden="true"
-                          />
-                        </div>
-
-                        <div className="rounded-2xl rounded-tl-md border border-blue-100 bg-white px-4 py-3 shadow-sm">
-                          <div className="flex items-center gap-3">
-                            <LoaderCircle
-                              className="size-4 animate-spin text-blue-600"
-                              aria-hidden="true"
-                            />
-
-                            <div>
-                              <p className="text-sm font-semibold text-slate-700">
-                                Assistant IA
-                              </p>
-
-                              <p className="mt-0.5 text-xs text-slate-500">
-                                Analyse du document en cours...
-                              </p>
-                            </div>
-                          </div>
-                        </div>
                       </div>
-                    </div>
-                  ) : null}
+                    );
+                  },
+                )}
 
-                  {canAskQuestions &&
-                  summaryMutation
-                    .isPending ? (
-                    <div className="flex justify-start">
-                      <div className="flex max-w-[85%] items-start gap-3 lg:max-w-[75%]">
-                        <div className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-white text-blue-600">
-                          <Bot
-                            className="size-4"
-                            aria-hidden="true"
-                          />
-                        </div>
+                {canAskQuestions &&
+                askQuestionMutation.isPending ? (
+                  <AssistantLoadingMessage
+                    text="Analyse du document en cours..."
+                  />
+                ) : null}
 
-                        <div className="rounded-2xl rounded-tl-md border border-blue-100 bg-white px-4 py-3 shadow-sm">
-                          <div className="flex items-center gap-3">
-                            <LoaderCircle
-                              className="size-4 animate-spin text-blue-600"
-                              aria-hidden="true"
-                            />
+                {canAskQuestions &&
+                summaryMutation.isPending ? (
+                  <AssistantLoadingMessage
+                    text="Planification du résumé..."
+                  />
+                ) : null}
 
-                            <div>
-                              <p className="text-sm font-semibold text-slate-700">
-                                Assistant IA
-                              </p>
+                {canAskQuestions &&
+                isSummaryRunning &&
+                !summaryMutation.isPending ? (
+                  <AssistantLoadingMessage
+                    text="Résumé du document en cours..."
+                  />
+                ) : null}
+              </div>
+            )}
 
-                              <p className="mt-0.5 text-xs text-slate-500">
-                                Planification du résumé...
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {canAskQuestions &&
-                  isSummaryRunning &&
-                  !summaryMutation
-                    .isPending ? (
-                    <div className="flex justify-start">
-                      <div className="flex max-w-[85%] items-start gap-3 lg:max-w-[75%]">
-                        <div className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-white text-blue-600">
-                          <Bot
-                            className="size-4"
-                            aria-hidden="true"
-                          />
-                        </div>
-
-                        <div className="rounded-2xl rounded-tl-md border border-blue-100 bg-white px-4 py-3 shadow-sm">
-                          <div className="flex items-center gap-3">
-                            <LoaderCircle
-                              className="size-4 animate-spin text-blue-600"
-                              aria-hidden="true"
-                            />
-
-                            <div>
-                              <p className="text-sm font-semibold text-slate-700">
-                                Assistant IA
-                              </p>
-
-                              <p className="mt-0.5 text-xs text-slate-500">
-                                Résumé du document en cours...
-                              </p>
-
-                              <p className="mt-1 text-[11px] text-slate-400">
-                                Vous pouvez laisser cette page ouverte pendant le traitement.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-              )}
-
-              {canAskQuestions ? (
-                <div className="z-10 shrink-0 border-t border-slate-200 bg-white p-4 shadow-[0_-8px_24px_rgba(15,23,42,0.04)] sm:p-5">
-                  {askQuestionMutation
-                    .isError ? (
-                    <div
-                      role="alert"
-                      className="mb-3 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3"
-                    >
-                      <AlertCircle
-                        className="mt-0.5 size-4 shrink-0 text-red-600"
-                        aria-hidden="true"
-                      />
-
-                      <div>
-                        <p className="text-sm font-semibold text-red-800">
-                          Impossible d’obtenir une réponse
-                        </p>
-
-                        <p className="mt-1 text-xs leading-5 text-red-700">
-                          {askQuestionMutation.error instanceof
-                          Error
-                            ? askQuestionMutation
-                                .error
-                                .message
-                            : "Une erreur inattendue est survenue pendant le traitement RAG."}
-                        </p>
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {summaryMutation
-                    .isError ? (
-                    <div
-                      role="alert"
-                      className="mb-3 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3"
-                    >
-                      <AlertCircle
-                        className="mt-0.5 size-4 shrink-0 text-red-600"
-                        aria-hidden="true"
-                      />
-
-                      <div>
-                        <p className="text-sm font-semibold text-red-800">
-                          Impossible de lancer le résumé
-                        </p>
-
-                        <p className="mt-1 text-xs leading-5 text-red-700">
-                          {summaryMutation.error instanceof
-                          Error
-                            ? summaryMutation
-                                .error
-                                .message
-                            : "Une erreur inattendue est survenue pendant la planification du résumé."}
-                        </p>
-                      </div>
-                    </div>
-                  ) : null}
-
-                  <form
-                    onSubmit={
-                      handleSubmit
+            {canAskQuestions ? (
+              <div className="z-10 shrink-0 border-t border-slate-200 bg-white p-3.5 shadow-[0_-8px_24px_rgba(15,23,42,0.04)] dark:border-slate-800 dark:bg-slate-900 dark:shadow-[0_-8px_24px_rgba(0,0,0,0.16)] sm:p-4">
+                {askQuestionMutation.isError ? (
+                  <ConversationError
+                    title="Impossible d’obtenir une réponse"
+                    message={
+                      askQuestionMutation.error instanceof
+                      Error
+                        ? askQuestionMutation.error.message
+                        : "Une erreur inattendue est survenue pendant le traitement RAG."
                     }
-                    className="rounded-2xl border border-slate-200 bg-slate-50/70 p-2 transition-colors focus-within:border-blue-300 focus-within:bg-white focus-within:ring-4 focus-within:ring-blue-50"
-                  >
-                    <textarea
-                      value={
-                        question
+                  />
+                ) : null}
+
+                {summaryMutation.isError ? (
+                  <ConversationError
+                    title="Impossible de lancer le résumé"
+                    message={
+                      summaryMutation.error instanceof
+                      Error
+                        ? summaryMutation.error.message
+                        : "Une erreur inattendue est survenue pendant la planification du résumé."
+                    }
+                  />
+                ) : null}
+
+                <form
+                  onSubmit={
+                    handleSubmit
+                  }
+                  className="rounded-2xl border border-slate-200 bg-slate-50/70 p-2 transition-all focus-within:border-blue-300 focus-within:bg-white focus-within:ring-4 focus-within:ring-blue-50 dark:border-slate-700 dark:bg-slate-800/60 dark:focus-within:border-blue-500/60 dark:focus-within:bg-slate-800 dark:focus-within:ring-blue-500/10"
+                >
+                  <textarea
+                    value={
+                      question
+                    }
+                    onChange={(
+                      event,
+                    ) => {
+                      setQuestion(
+                        event.target.value,
+                      );
+                    }}
+                    onKeyDown={(
+                      event,
+                    ) => {
+                      if (
+                        event.key ===
+                          "Enter" &&
+                        !event.shiftKey
+                      ) {
+                        event.preventDefault();
+
+                        event.currentTarget.form?.requestSubmit();
                       }
-                      onChange={(
-                        event,
-                      ) => {
-                        setQuestion(
-                          event
-                            .target
-                            .value,
-                        );
-                      }}
-                      onKeyDown={(
-                        event,
-                      ) => {
-                        if (
-                          event.key ===
-                            "Enter" &&
-                          !event.shiftKey
-                        ) {
-                          event.preventDefault();
+                    }}
+                    disabled={
+                      isBusy
+                    }
+                    maxLength={
+                      MAX_QUESTION_LENGTH
+                    }
+                    rows={
+                      2
+                    }
+                    placeholder={
+                      isSummaryRunning
+                        ? "Résumé du document en cours..."
+                        : "Posez une question sur ce document..."
+                    }
+                    aria-label="Question à poser à l'assistant IA"
+                    className="max-h-32 min-h-14 w-full resize-none bg-transparent px-3 py-2 text-sm leading-6 text-slate-800 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-60 dark:text-slate-200 dark:placeholder:text-slate-500"
+                  />
 
-                          event
-                            .currentTarget
-                            .form
-                            ?.requestSubmit();
-                        }
-                      }}
-                      disabled={
-                        isBusy
-                      }
-                      maxLength={
-                        MAX_QUESTION_LENGTH
-                      }
-                      rows={2}
-                      placeholder={
-                        isSummaryRunning
-                          ? "Résumé du document en cours..."
-                          : "Posez une question sur ce document..."
-                      }
-                      aria-label="Question à poser à l'assistant IA"
-                      className="max-h-36 min-h-16 w-full resize-none bg-transparent px-3 py-2 text-sm leading-6 text-slate-800 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-60"
-                    />
-
-                    <div className="flex flex-col gap-3 border-t border-slate-200/80 px-2 pt-2 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="flex items-center gap-2 text-xs text-slate-400">
-                        <Sparkles
-                          className="size-3.5 text-blue-500"
-                          aria-hidden="true"
-                        />
-
-                        <span>
-                          {isSummaryRunning
-                            ? "Le résumé est généré en arrière-plan."
-                            : "Entrée pour envoyer · Maj + Entrée pour une nouvelle ligne"}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-end gap-3">
-                        <span
-                          className={`text-xs ${
-                            question.length >=
-                            MAX_QUESTION_LENGTH
-                              ? "font-semibold text-red-600"
-                              : "text-slate-400"
-                          }`}
-                        >
-                          {
-                            question.length
-                          }
-                          /
-                          {
-                            MAX_QUESTION_LENGTH
-                          }
-                        </span>
-
-                        <button
-                          type="submit"
-                          disabled={
-                            !isQuestionValid ||
-                            isBusy
-                          }
-                          className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm shadow-blue-600/20 transition-all hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
-                        >
-                          {isBusy ? (
-                            <>
-                              <LoaderCircle
-                                className="size-4 animate-spin"
-                                aria-hidden="true"
-                              />
-
-                              Traitement...
-                            </>
-                          ) : (
-                            <>
-                              <Send
-                                className="size-4"
-                                aria-hidden="true"
-                              />
-
-                              Envoyer
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  </form>
-
-                  <p className="mt-2 px-1 text-xs leading-5 text-slate-400">
-                    Les réponses sont générées uniquement à partir des informations retrouvées dans vos documents.
-                  </p>
-                </div>
-              ) : null}
-
-              {isAdmin ? (
-                <div className="z-10 shrink-0 border-t border-slate-200 bg-white p-4 shadow-[0_-8px_24px_rgba(15,23,42,0.04)] sm:p-5">
-                  <div className="flex items-start gap-3 rounded-2xl border border-blue-100 bg-blue-50/60 px-4 py-4">
-                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white text-blue-600 shadow-sm">
-                      <ShieldCheck
-                        className="size-5"
+                  <div className="flex flex-col gap-3 border-t border-slate-200/80 px-2 pt-2 dark:border-slate-700 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
+                      <Sparkles
+                        className="size-3.5 text-blue-500 dark:text-blue-400"
                         aria-hidden="true"
                       />
-                    </span>
 
-                    <div>
-                      <p className="text-sm font-bold text-slate-900">
-                        Consultation administrateur
-                      </p>
+                      <span>
+                        {isSummaryRunning
+                          ? "Résumé en cours de génération."
+                          : "Entrée pour envoyer · Maj + Entrée pour une nouvelle ligne"}
+                      </span>
+                    </div>
 
-                      <p className="mt-1 text-sm leading-6 text-slate-600">
-                        Vous consultez une conversation utilisateur en lecture seule. Les messages et les sources restent accessibles, mais aucune nouvelle question ne sera ajoutée à cette conversation.
-                      </p>
+                    <div className="flex items-center justify-end gap-3">
+                      <span
+                        className={`text-xs ${
+                          question.length >=
+                          MAX_QUESTION_LENGTH
+                            ? "font-semibold text-red-600 dark:text-red-400"
+                            : "text-slate-400 dark:text-slate-500"
+                        }`}
+                      >
+                        {
+                          question.length
+                        }
+                        /
+                        {
+                          MAX_QUESTION_LENGTH
+                        }
+                      </span>
+
+                      <button
+                        type="submit"
+                        disabled={
+                          !isQuestionValid ||
+                          isBusy
+                        }
+                        className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm shadow-blue-600/20 transition-all hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none dark:disabled:bg-slate-700 dark:disabled:text-slate-500"
+                      >
+                        {isBusy ? (
+                          <>
+                            <LoaderCircle
+                              className="size-4 animate-spin"
+                              aria-hidden="true"
+                            />
+
+                            Traitement...
+                          </>
+                        ) : (
+                          <>
+                            <Send
+                              className="size-4"
+                              aria-hidden="true"
+                            />
+
+                            Envoyer
+                          </>
+                        )}
+                      </button>
                     </div>
                   </div>
+                </form>
+
+                <p className="mt-2 px-1 text-[11px] leading-5 text-slate-400 dark:text-slate-500">
+                  Réponses générées à partir des informations retrouvées dans vos documents.
+                </p>
+              </div>
+            ) : null}
+
+            {isAdmin ? (
+              <div className="z-10 shrink-0 border-t border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-900">
+                <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+                  <ShieldCheck
+                    className="size-4 text-blue-600 dark:text-blue-400"
+                    aria-hidden="true"
+                  />
+
+                  Consultation administrateur en lecture seule.
                 </div>
-              ) : null}
-            </section>
-          </>
+              </div>
+            ) : null}
+          </section>
         ) : null}
       </motion.div>
     </DashboardLayout>
+  );
+}
+
+function AssistantLoadingMessage({
+  text,
+}: {
+  text: string;
+}) {
+  return (
+    <div className="flex justify-start">
+      <div className="flex max-w-[85%] items-start gap-3 lg:max-w-[74%]">
+        <div className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-white text-blue-600 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-blue-400">
+          <Bot
+            className="size-4"
+            aria-hidden="true"
+          />
+        </div>
+
+        <div className="rounded-2xl rounded-tl-md border border-blue-100 bg-white px-4 py-3 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          <div className="flex items-center gap-3">
+            <LoaderCircle
+              className="size-4 animate-spin text-blue-600 dark:text-blue-400"
+              aria-hidden="true"
+            />
+
+            <div>
+              <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                Assistant IA
+              </p>
+
+              <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                {
+                  text
+                }
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ConversationError({
+  title,
+  message,
+}: {
+  title: string;
+  message: string;
+}) {
+  return (
+    <div
+      role="alert"
+      className="mb-3 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900/50 dark:bg-red-950/30"
+    >
+      <AlertCircle
+        className="mt-0.5 size-4 shrink-0 text-red-600 dark:text-red-400"
+        aria-hidden="true"
+      />
+
+      <div>
+        <p className="text-sm font-semibold text-red-800 dark:text-red-300">
+          {
+            title
+          }
+        </p>
+
+        <p className="mt-1 text-xs leading-5 text-red-700 dark:text-red-400">
+          {
+            message
+          }
+        </p>
+      </div>
+    </div>
   );
 }

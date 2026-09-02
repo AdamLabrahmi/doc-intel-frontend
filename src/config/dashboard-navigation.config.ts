@@ -5,17 +5,20 @@ import type {
 import {
   Activity,
   Files,
+  Gauge,
   LayoutDashboard,
   MessageSquareText,
   Settings,
   UploadCloud,
-  Users,
 } from "lucide-react";
 
 import type {
   AuthenticatedUserRole,
 } from "@/features/auth/types/authenticated-user.types";
-import { ROUTES } from "@/routes/routePaths";
+
+import {
+  ROUTES,
+} from "@/routes/routePaths";
 
 export interface DashboardNavigationItem {
   label: string;
@@ -23,7 +26,7 @@ export interface DashboardNavigationItem {
   icon: LucideIcon;
   end?: boolean;
 
-  
+ 
   roles: readonly AuthenticatedUserRole[];
 }
 
@@ -61,15 +64,6 @@ export const dashboardNavigationItems:
     },
 
     {
-      label: "Utilisateurs",
-      path: ROUTES.users,
-      icon: Users,
-      roles: [
-        "ADMIN",
-      ],
-    },
-
-    {
       label: "Importer",
       path: ROUTES.documentUpload,
       icon: UploadCloud,
@@ -79,7 +73,16 @@ export const dashboardNavigationItems:
       ],
     },
 
-   
+    {
+      label: "Évaluation extraction",
+      path: ROUTES.extractionBenchmark,
+      icon: Gauge,
+      end: true,
+      roles: [
+        "ADMIN",
+      ],
+    },
+
     {
       label: "Activité",
       path: ROUTES.activity,

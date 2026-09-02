@@ -1,5 +1,12 @@
-import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import {
+  useState,
+} from "react";
+
+import {
+  useNavigate,
+  useParams,
+} from "react-router-dom";
+
 import {
   ArrowLeft,
   BadgeEuro,
@@ -26,16 +33,43 @@ import {
   XCircle,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { useDocumentAiHistoryQuery } from "@/features/documents/hooks/useDocumentAiHistoryQuery";
-import { useDocumentAiResultQuery } from "@/features/documents/hooks/useDocumentAiResultQuery";
-import { useDocumentExtractionQuery } from "@/features/documents/hooks/useDocumentExtractionQuery";
-import { useDocumentExtractedTextQuery } from "@/features/documents/hooks/useDocumentExtractedTextQuery";
-import { DashboardLayout } from "@/layouts/DashboardLayout";
-import { ROUTES } from "@/routes/routePaths";
+import {
+  Button,
+} from "@/components/ui/button";
+
+import {
+  useDocumentAiHistoryQuery,
+} from "@/features/documents/hooks/useDocumentAiHistoryQuery";
+
+import {
+  useDocumentAiResultQuery,
+} from "@/features/documents/hooks/useDocumentAiResultQuery";
+
+import {
+  useDocumentExtractionQuery,
+} from "@/features/documents/hooks/useDocumentExtractionQuery";
+
+import {
+  useDocumentExtractedTextQuery,
+} from "@/features/documents/hooks/useDocumentExtractedTextQuery";
+
+import {
+  DashboardLayout,
+} from "@/layouts/DashboardLayout";
+
+import {
+  ROUTES,
+} from "@/routes/routePaths";
+
+import {
+  useSettingsStore,
+} from "@/stores/settings.store";
 
 function formatConfidence(
-  confidence: number | null | undefined,
+  confidence:
+    | number
+    | null
+    | undefined,
 ): string {
   if (
     confidence === null ||
@@ -49,98 +83,157 @@ function formatConfidence(
       ? confidence * 100
       : confidence;
 
-  return `${normalizedConfidence.toFixed(1)} %`;
+  return `${normalizedConfidence.toFixed(
+    1,
+  )} %`;
 }
 
 function formatDate(
-  value: string | null | undefined,
+  value:
+    | string
+    | null
+    | undefined,
 ): string {
   if (!value) {
     return "Non disponible";
   }
 
   const date =
-    new Date(value);
+    new Date(
+      value,
+    );
 
-  if (Number.isNaN(date.getTime())) {
+  if (
+    Number.isNaN(
+      date.getTime(),
+    )
+  ) {
     return "Non disponible";
   }
 
   return new Intl.DateTimeFormat(
     "fr-FR",
     {
-      dateStyle: "medium",
-      timeStyle: "short",
+      dateStyle:
+        "medium",
+
+      timeStyle:
+        "short",
     },
-  ).format(date);
+  ).format(
+    date,
+  );
 }
 
 function formatSimpleDate(
-  value: string | null,
+  value:
+    | string
+    | null,
 ): string {
   if (!value) {
     return "Non disponible";
   }
 
   const date =
-    new Date(value);
+    new Date(
+      value,
+    );
 
-  if (Number.isNaN(date.getTime())) {
+  if (
+    Number.isNaN(
+      date.getTime(),
+    )
+  ) {
     return value;
   }
 
   return new Intl.DateTimeFormat(
     "fr-FR",
     {
-      dateStyle: "medium",
+      dateStyle:
+        "medium",
     },
-  ).format(date);
+  ).format(
+    date,
+  );
 }
 
 function calculateDuration(
-  startedAt: string | null | undefined,
-  finishedAt: string | null | undefined,
+  startedAt:
+    | string
+    | null
+    | undefined,
+
+  finishedAt:
+    | string
+    | null
+    | undefined,
 ): string {
-  if (!startedAt || !finishedAt) {
+  if (
+    !startedAt ||
+    !finishedAt
+  ) {
     return "Non disponible";
   }
 
   const start =
-    new Date(startedAt).getTime();
+    new Date(
+      startedAt,
+    ).getTime();
 
   const end =
-    new Date(finishedAt).getTime();
+    new Date(
+      finishedAt,
+    ).getTime();
 
   if (
-    Number.isNaN(start) ||
-    Number.isNaN(end) ||
+    Number.isNaN(
+      start,
+    ) ||
+    Number.isNaN(
+      end,
+    ) ||
     end < start
   ) {
     return "Non disponible";
   }
 
   const durationSeconds =
-    (end - start) / 1000;
+    (
+      end -
+      start
+    ) /
+    1000;
 
-  if (durationSeconds < 60) {
-    return `${durationSeconds.toFixed(2)} s`;
+  if (
+    durationSeconds <
+    60
+  ) {
+    return `${durationSeconds.toFixed(
+      2,
+    )} s`;
   }
 
   const minutes =
     Math.floor(
-      durationSeconds / 60,
+      durationSeconds /
+        60,
     );
 
   const seconds =
     Math.round(
-      durationSeconds % 60,
+      durationSeconds %
+        60,
     );
 
   return `${minutes} min ${seconds} s`;
 }
 
 function formatDurationMs(
-  durationMs: number | null | undefined,
+  durationMs:
+    | number
+    | null
+    | undefined,
 ): string {
   if (
     durationMs === null ||
@@ -150,23 +243,31 @@ function formatDurationMs(
     return "Non disponible";
   }
 
-  if (durationMs < 60_000) {
+  if (
+    durationMs <
+    60_000
+  ) {
     return `${(
       durationMs /
       1000
-    ).toFixed(2)} s`;
+    ).toFixed(
+      2,
+    )} s`;
   }
 
   const minutes =
     Math.floor(
       durationMs /
-      60_000,
+        60_000,
     );
 
   const seconds =
     Math.round(
-      (durationMs % 60_000) /
-      1000,
+      (
+        durationMs %
+        60_000
+      ) /
+        1000,
     );
 
   return `${minutes} min ${seconds} s`;
@@ -174,16 +275,29 @@ function formatDurationMs(
 
 function isRecord(
   value: unknown,
-): value is Record<string, unknown> {
+): value is Record<
+  string,
+  unknown
+> {
   return (
-    typeof value === "object" &&
-    value !== null &&
-    !Array.isArray(value)
+    typeof value ===
+      "object" &&
+    value !==
+      null &&
+    !Array.isArray(
+      value,
+    )
   );
 }
 
 function getStringValue(
-  object: Record<string, unknown> | null,
+  object:
+    | Record<
+        string,
+        unknown
+      >
+    | null,
+
   key: string,
 ): string | null {
   if (!object) {
@@ -191,11 +305,16 @@ function getStringValue(
   }
 
   const value =
-    object[key];
+    object[
+      key
+    ];
 
   if (
-    typeof value !== "string" ||
-    value.trim().length === 0
+    typeof value !==
+      "string" ||
+    value.trim()
+      .length ===
+      0
   ) {
     return null;
   }
@@ -204,7 +323,13 @@ function getStringValue(
 }
 
 function getNumberValue(
-  object: Record<string, unknown> | null,
+  object:
+    | Record<
+        string,
+        unknown
+      >
+    | null,
+
   key: string,
 ): number | null {
   if (!object) {
@@ -212,28 +337,48 @@ function getNumberValue(
   }
 
   const value =
-    object[key];
+    object[
+      key
+    ];
 
   if (
-    typeof value === "number" &&
-    Number.isFinite(value)
+    typeof value ===
+      "number" &&
+    Number.isFinite(
+      value,
+    )
   ) {
     return value;
   }
 
   if (
-    typeof value === "string" &&
-    value.trim().length > 0
+    typeof value ===
+      "string" &&
+    value.trim()
+      .length >
+      0
   ) {
     const normalized =
       value
-        .replace(/\s/g, "")
-        .replace(",", ".");
+        .replace(
+          /\s/g,
+          "",
+        )
+        .replace(
+          ",",
+          ".",
+        );
 
     const number =
-      Number(normalized);
+      Number(
+        normalized,
+      );
 
-    if (Number.isFinite(number)) {
+    if (
+      Number.isFinite(
+        number,
+      )
+    ) {
       return number;
     }
   }
@@ -242,7 +387,13 @@ function getNumberValue(
 }
 
 function getStringArray(
-  object: Record<string, unknown> | null,
+  object:
+    | Record<
+        string,
+        unknown
+      >
+    | null,
+
   key: string,
 ): string[] {
   if (!object) {
@@ -250,24 +401,43 @@ function getStringArray(
   }
 
   const value =
-    object[key];
+    object[
+      key
+    ];
 
-  if (!Array.isArray(value)) {
+  if (
+    !Array.isArray(
+      value,
+    )
+  ) {
     return [];
   }
 
   return value.filter(
-    (item): item is string =>
-      typeof item === "string" &&
-      item.trim().length > 0,
+    (
+      item,
+    ): item is string =>
+      typeof item ===
+        "string" &&
+      item.trim()
+        .length >
+        0,
   );
 }
 
 function formatMoney(
-  amount: number | null,
-  currency: string | null,
+  amount:
+    | number
+    | null,
+
+  currency:
+    | string
+    | null,
 ): string {
-  if (amount === null) {
+  if (
+    amount ===
+    null
+  ) {
     return "Non disponible";
   }
 
@@ -275,10 +445,15 @@ function formatMoney(
     new Intl.NumberFormat(
       "fr-FR",
       {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2,
+        minimumFractionDigits:
+          0,
+
+        maximumFractionDigits:
+          2,
       },
-    ).format(amount);
+    ).format(
+      amount,
+    );
 
   if (!currency) {
     return formattedAmount;
@@ -293,7 +468,12 @@ interface ImportantField {
 }
 
 function getImportantFields(
-  object: Record<string, unknown> | null,
+  object:
+    | Record<
+        string,
+        unknown
+      >
+    | null,
 ): ImportantField[] {
   if (!object) {
     return [];
@@ -302,7 +482,11 @@ function getImportantFields(
   const value =
     object.importantFields;
 
-  if (!Array.isArray(value)) {
+  if (
+    !Array.isArray(
+      value,
+    )
+  ) {
     return [];
   }
 
@@ -310,7 +494,11 @@ function getImportantFields(
     (
       item,
     ): ImportantField[] => {
-      if (!isRecord(item)) {
+      if (
+        !isRecord(
+          item,
+        )
+      ) {
         return [];
       }
 
@@ -321,16 +509,21 @@ function getImportantFields(
         item.value;
 
       if (
-        typeof name !== "string" ||
-        typeof fieldValue !== "string"
+        typeof name !==
+          "string" ||
+        typeof fieldValue !==
+          "string"
       ) {
         return [];
       }
 
       return [
         {
-          name: name.trim(),
-          value: fieldValue.trim(),
+          name:
+            name.trim(),
+
+          value:
+            fieldValue.trim(),
         },
       ];
     },
@@ -341,25 +534,47 @@ export default function DocumentDetails() {
   const navigate =
     useNavigate();
 
+  const technicalDetailsMode =
+    useSettingsStore(
+      (
+        state,
+      ) =>
+        state.technicalDetailsMode,
+    );
+
+  const showTechnicalDetails =
+    technicalDetailsMode ===
+    "detailed";
+
   const {
-    documentId: documentIdParam,
-  } = useParams<{
-    documentId: string;
-  }>();
+    documentId:
+      documentIdParam,
+  } =
+    useParams<{
+      documentId: string;
+    }>();
 
   const [
     expandedAiRunId,
     setExpandedAiRunId,
-  ] = useState<number | null>(
-    null,
-  );
+  ] =
+    useState<
+      number | null
+    >(
+      null,
+    );
 
   const documentId =
-    Number(documentIdParam);
+    Number(
+      documentIdParam,
+    );
 
   const isDocumentIdValid =
-    Number.isFinite(documentId) &&
-    documentId > 0;
+    Number.isFinite(
+      documentId,
+    ) &&
+    documentId >
+      0;
 
   const extractionQuery =
     useDocumentExtractionQuery(
@@ -403,20 +618,21 @@ export default function DocumentDetails() {
     extractedTextQuery.isError;
 
   const aiDocumentType =
-    aiResult?.fieldsJson?.documentType ??
+    aiResult?.fieldsJson
+      ?.documentType ??
     null;
 
   const aiFields =
-    aiResult?.fieldsJson?.fields;
+    aiResult?.fieldsJson
+      ?.fields;
 
   const aiFieldsRecord =
-    isRecord(aiFields)
+    isRecord(
+      aiFields,
+    )
       ? aiFields
       : null;
 
-  /*
-   * Résultat générique.
-   */
   const aiSummary =
     getStringValue(
       aiFieldsRecord,
@@ -453,18 +669,23 @@ export default function DocumentDetails() {
     );
 
   const hasGenericStructuredData =
-    Boolean(aiSummary) ||
-    importantFields.length > 0 ||
-    entities.length > 0 ||
-    dates.length > 0 ||
-    amounts.length > 0 ||
-    references.length > 0;
+    Boolean(
+      aiSummary,
+    ) ||
+    importantFields.length >
+      0 ||
+    entities.length >
+      0 ||
+    dates.length >
+      0 ||
+    amounts.length >
+      0 ||
+    references.length >
+      0;
 
-  /*
-   * Résultat facture.
-   */
   const isInvoice =
-    aiDocumentType === "FACTURE";
+    aiDocumentType ===
+    "FACTURE";
 
   const invoiceNumber =
     getStringValue(
@@ -514,13 +735,15 @@ export default function DocumentDetails() {
       "amountIncludingTax",
     );
 
-  if (!isDocumentIdValid) {
+  if (
+    !isDocumentIdValid
+  ) {
     return (
       <DashboardLayout>
         <div className="mx-auto w-full max-w-[1400px]">
-          <section className="rounded-3xl border border-red-200 bg-red-50 p-8">
+          <section className="rounded-3xl border border-red-200 bg-red-50 p-8 dark:border-red-900/50 dark:bg-red-950/30">
             <div className="flex items-start gap-4">
-              <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-white text-red-600 shadow-sm">
+              <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-white text-red-600 shadow-sm dark:bg-slate-900 dark:text-red-400">
                 <CircleAlert
                   className="size-5"
                   aria-hidden="true"
@@ -528,13 +751,12 @@ export default function DocumentDetails() {
               </span>
 
               <div>
-                <h1 className="text-lg font-bold text-red-900">
+                <h1 className="text-lg font-bold text-red-900 dark:text-red-300">
                   Document invalide
                 </h1>
 
-                <p className="mt-2 text-sm leading-6 text-red-700">
-                  L’identifiant du document présent dans l’URL
-                  n’est pas valide.
+                <p className="mt-2 text-sm leading-6 text-red-700 dark:text-red-400">
+                  L’identifiant du document présent dans l’URL n’est pas valide.
                 </p>
 
                 <Button
@@ -545,7 +767,7 @@ export default function DocumentDetails() {
                       ROUTES.documents,
                     )
                   }
-                  className="mt-5 rounded-xl border-red-200 bg-white"
+                  className="mt-5 rounded-xl border-red-200 bg-white dark:border-red-900/50 dark:bg-slate-900 dark:text-slate-200"
                 >
                   <ArrowLeft
                     className="size-4"
@@ -554,9 +776,6 @@ export default function DocumentDetails() {
 
                   Retour aux documents
                 </Button>
-
-
-                
               </div>
             </div>
           </section>
@@ -568,83 +787,94 @@ export default function DocumentDetails() {
   return (
     <DashboardLayout>
       <div className="mx-auto w-full max-w-[1400px] space-y-6">
-        {/* HEADER */}
-        {/* HEADER */}
-<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-  <div className="flex items-center gap-4">
-    <Button
-      type="button"
-      variant="outline"
-      onClick={() =>
-        navigate(
-          ROUTES.documents,
-        )
-      }
-      className="size-10 shrink-0 rounded-xl p-0"
-      aria-label="Retour à la liste des documents"
-    >
-      <ArrowLeft
-        className="size-4"
-        aria-hidden="true"
-      />
-    </Button>
+        {/* =====================================================
+            Header
+        ===================================================== */}
 
-    <div>
-      <h1 className="text-2xl font-bold tracking-tight text-slate-950">
-        Détail du document
-      </h1>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() =>
+                navigate(
+                  ROUTES.documents,
+                )
+              }
+              className="size-10 shrink-0 rounded-xl border-slate-200 bg-white p-0 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+              aria-label="Retour à la liste des documents"
+            >
+              <ArrowLeft
+                className="size-4"
+                aria-hidden="true"
+              />
+            </Button>
 
-      <p className="mt-1 text-sm text-slate-500">
-        Document #{documentId}
-      </p>
-    </div>
-  </div>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
+                Détail du document
+              </h1>
 
-  <Button
-    type="button"
-    onClick={() =>
-      navigate(
-        ROUTES.documentQuestions(
-          documentId,
-        ),
-      )
-    }
-    className="rounded-xl bg-blue-600 text-white hover:bg-blue-700"
-  >
-    <BrainCircuit
-      className="size-4"
-      aria-hidden="true"
-    />
+              {showTechnicalDetails ? (
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  Document #{documentId}
+                </p>
+              ) : null}
+            </div>
+          </div>
 
-    Questions sur ce document
-  </Button>
-</div>
+          <Button
+            type="button"
+            onClick={() =>
+              navigate(
+                ROUTES.documentQuestions(
+                  documentId,
+                ),
+              )
+            }
+            className="rounded-xl bg-blue-600 text-white hover:bg-blue-700"
+          >
+            <BrainCircuit
+              className="size-4"
+              aria-hidden="true"
+            />
 
-        {/* LOADING */}
-        {isLoading && (
-          <section className="rounded-3xl border border-slate-200 bg-white px-6 py-16 shadow-sm">
+            Questions sur ce document
+          </Button>
+        </div>
+
+        {/* =====================================================
+            Loading
+        ===================================================== */}
+
+        {isLoading ? (
+          <section className="rounded-3xl border border-slate-200 bg-white px-6 py-16 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <div className="flex flex-col items-center justify-center text-center">
               <Loader2
-                className="size-7 animate-spin text-blue-600"
+                className="size-7 animate-spin text-blue-600 dark:text-blue-400"
                 aria-hidden="true"
               />
 
-              <p className="mt-4 text-sm font-semibold text-slate-700">
+              <p className="mt-4 text-sm font-semibold text-slate-700 dark:text-slate-300">
                 Chargement du document...
               </p>
 
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 Récupération des informations d’extraction.
               </p>
             </div>
           </section>
-        )}
+        ) : null}
 
-        {/* ERROR */}
-        {!isLoading && hasError && (
-          <section className="rounded-3xl border border-red-200 bg-red-50 p-6">
+        {/* =====================================================
+            Erreur
+        ===================================================== */}
+
+        {!isLoading &&
+        hasError ? (
+          <section className="rounded-3xl border border-red-200 bg-red-50 p-6 dark:border-red-900/50 dark:bg-red-950/30">
             <div className="flex items-start gap-4">
-              <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-white text-red-600 shadow-sm">
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-white text-red-600 shadow-sm dark:bg-slate-900 dark:text-red-400">
                 <CircleAlert
                   className="size-5"
                   aria-hidden="true"
@@ -652,13 +882,12 @@ export default function DocumentDetails() {
               </span>
 
               <div>
-                <h2 className="font-bold text-red-900">
+                <h2 className="font-bold text-red-900 dark:text-red-300">
                   Impossible de charger le document
                 </h2>
 
-                <p className="mt-2 text-sm leading-6 text-red-700">
-                  Les informations d’extraction ou le texte extrait
-                  n’ont pas pu être récupérés depuis le backend.
+                <p className="mt-2 text-sm leading-6 text-red-700 dark:text-red-400">
+                  Les informations d’extraction ou le texte extrait n’ont pas pu être récupérés depuis le backend.
                 </p>
 
                 <Button
@@ -668,21 +897,25 @@ export default function DocumentDetails() {
                     void extractionQuery.refetch();
                     void extractedTextQuery.refetch();
                   }}
-                  className="mt-4 rounded-xl border-red-200 bg-white"
+                  className="mt-4 rounded-xl border-red-200 bg-white dark:border-red-900/50 dark:bg-slate-900 dark:text-slate-200"
                 >
                   Réessayer
                 </Button>
               </div>
             </div>
           </section>
-        )}
+        ) : null}
 
-        {!isLoading && !hasError && (
+        {!isLoading &&
+        !hasError ? (
           <>
-            {/* INFORMATIONS EXTRACTION */}
-            <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
+            {/* =================================================
+                Informations d'extraction
+            ================================================= */}
+
+            <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-7">
               <div className="flex items-center gap-3">
-                <span className="flex size-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+                <span className="flex size-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
                   <ScanText
                     className="size-5"
                     aria-hidden="true"
@@ -690,19 +923,28 @@ export default function DocumentDetails() {
                 </span>
 
                 <div>
-                  <h2 className="font-bold text-slate-950">
+                  <h2 className="font-bold text-slate-950 dark:text-white">
                     Informations d’extraction
                   </h2>
 
-                  <p className="mt-0.5 text-sm text-slate-500">
-                    Métadonnées générées lors de l’extraction du document.
+                  <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+                    Informations générées lors de l’extraction du document.
                   </p>
                 </div>
               </div>
 
-              <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                <article className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
-                  <div className="flex items-center gap-2 text-slate-500">
+              <div
+                className={[
+                  "mt-6 grid gap-4 sm:grid-cols-2",
+                  showTechnicalDetails
+                    ? "xl:grid-cols-4"
+                    : "xl:grid-cols-3",
+                ].join(
+                  " ",
+                )}
+              >
+                <article className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 dark:border-slate-700 dark:bg-slate-800/60">
+                  <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
                     <ScanText
                       className="size-4"
                       aria-hidden="true"
@@ -713,14 +955,14 @@ export default function DocumentDetails() {
                     </span>
                   </div>
 
-                  <p className="mt-3 font-bold text-slate-950">
+                  <p className="mt-3 font-bold text-slate-950 dark:text-white">
                     {extraction?.extractionMethod ??
                       "Non disponible"}
                   </p>
                 </article>
 
-                <article className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
-                  <div className="flex items-center gap-2 text-slate-500">
+                <article className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 dark:border-slate-700 dark:bg-slate-800/60">
+                  <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
                     <Languages
                       className="size-4"
                       aria-hidden="true"
@@ -731,14 +973,14 @@ export default function DocumentDetails() {
                     </span>
                   </div>
 
-                  <p className="mt-3 font-bold text-slate-950">
+                  <p className="mt-3 font-bold text-slate-950 dark:text-white">
                     {extraction?.language ??
                       "Non disponible"}
                   </p>
                 </article>
 
-                <article className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
-                  <div className="flex items-center gap-2 text-slate-500">
+                <article className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 dark:border-slate-700 dark:bg-slate-800/60">
+                  <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
                     <ShieldCheck
                       className="size-4"
                       aria-hidden="true"
@@ -749,63 +991,70 @@ export default function DocumentDetails() {
                     </span>
                   </div>
 
-                  <p className="mt-3 font-bold text-slate-950">
+                  <p className="mt-3 font-bold text-slate-950 dark:text-white">
                     {formatConfidence(
                       extraction?.confidence,
                     )}
                   </p>
                 </article>
 
-                <article className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
-                  <div className="flex items-center gap-2 text-slate-500">
-                    <FileText
-                      className="size-4"
-                      aria-hidden="true"
-                    />
+                {showTechnicalDetails ? (
+                  <article className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 dark:border-slate-700 dark:bg-slate-800/60">
+                    <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+                      <FileText
+                        className="size-4"
+                        aria-hidden="true"
+                      />
 
-                    <span className="text-xs font-bold uppercase tracking-wide">
-                      Identifiant
-                    </span>
+                      <span className="text-xs font-bold uppercase tracking-wide">
+                        Identifiant
+                      </span>
+                    </div>
+
+                    <p className="mt-3 font-bold text-slate-950 dark:text-white">
+                      #{documentId}
+                    </p>
+                  </article>
+                ) : null}
+              </div>
+
+              {showTechnicalDetails ? (
+                <div className="mt-5 grid gap-4 border-t border-slate-100 pt-5 dark:border-slate-800 sm:grid-cols-2">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                      Création
+                    </p>
+
+                    <p className="mt-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                      {formatDate(
+                        extraction?.createdAt,
+                      )}
+                    </p>
                   </div>
 
-                  <p className="mt-3 font-bold text-slate-950">
-                    #{documentId}
-                  </p>
-                </article>
-              </div>
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                      Dernière modification
+                    </p>
 
-              <div className="mt-5 grid gap-4 border-t border-slate-100 pt-5 sm:grid-cols-2">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
-                    Création
-                  </p>
-
-                  <p className="mt-2 text-sm font-semibold text-slate-700">
-                    {formatDate(
-                      extraction?.createdAt,
-                    )}
-                  </p>
+                    <p className="mt-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                      {formatDate(
+                        extraction?.updatedAt,
+                      )}
+                    </p>
+                  </div>
                 </div>
-
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
-                    Dernière modification
-                  </p>
-
-                  <p className="mt-2 text-sm font-semibold text-slate-700">
-                    {formatDate(
-                      extraction?.updatedAt,
-                    )}
-                  </p>
-                </div>
-              </div>
+              ) : null}
             </section>
 
-            {/* TEXTE EXTRAIT */}
-            <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-              <div className="border-b border-slate-100 px-5 py-5 sm:px-7">
+            {/* =================================================
+                Texte extrait
+            ================================================= */}
+
+            <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <div className="border-b border-slate-100 px-5 py-5 dark:border-slate-800 sm:px-7">
                 <div className="flex items-center gap-3">
-                  <span className="flex size-11 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-700">
+                  <span className="flex size-11 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-400">
                     <FileText
                       className="size-5"
                       aria-hidden="true"
@@ -813,31 +1062,34 @@ export default function DocumentDetails() {
                   </span>
 
                   <div>
-                    <h2 className="font-bold text-slate-950">
+                    <h2 className="font-bold text-slate-950 dark:text-white">
                       Texte extrait
                     </h2>
 
-                    <p className="mt-0.5 text-sm text-slate-500">
-                      Contenu textuel récupéré automatiquement
-                      depuis le document.
+                    <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+                      Contenu textuel récupéré automatiquement depuis le document.
                     </p>
                   </div>
                 </div>
               </div>
 
               <div className="p-5 sm:p-7">
-                {extractedText?.extractedText?.trim() ? (
-                  <pre className="max-h-[650px] overflow-auto whitespace-pre-wrap break-words rounded-2xl border border-slate-200 bg-slate-50 p-5 font-mono text-sm leading-7 text-slate-700">
-                    {extractedText.extractedText}
+                {extractedText
+                  ?.extractedText
+                  ?.trim() ? (
+                  <pre className="max-h-[650px] overflow-auto whitespace-pre-wrap break-words rounded-2xl border border-slate-200 bg-slate-50 p-5 font-mono text-sm leading-7 text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
+                    {
+                      extractedText.extractedText
+                    }
                   </pre>
                 ) : (
-                  <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center">
+                  <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center dark:border-slate-700 dark:bg-slate-800/50">
                     <FileText
-                      className="mx-auto size-6 text-slate-400"
+                      className="mx-auto size-6 text-slate-400 dark:text-slate-500"
                       aria-hidden="true"
                     />
 
-                    <p className="mt-3 text-sm font-semibold text-slate-700">
+                    <p className="mt-3 text-sm font-semibold text-slate-700 dark:text-slate-300">
                       Aucun texte extrait disponible
                     </p>
                   </div>
@@ -845,11 +1097,14 @@ export default function DocumentDetails() {
               </div>
             </section>
 
-            {/* ANALYSE IA */}
-            <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-              <div className="border-b border-slate-100 px-5 py-5 sm:px-7">
+            {/* =================================================
+                Analyse IA
+            ================================================= */}
+
+            <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <div className="border-b border-slate-100 px-5 py-5 dark:border-slate-800 sm:px-7">
                 <div className="flex items-center gap-3">
-                  <span className="flex size-11 items-center justify-center rounded-2xl bg-violet-50 text-violet-700">
+                  <span className="flex size-11 items-center justify-center rounded-2xl bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-400">
                     <BrainCircuit
                       className="size-5"
                       aria-hidden="true"
@@ -857,48 +1112,46 @@ export default function DocumentDetails() {
                   </span>
 
                   <div>
-                    <h2 className="font-bold text-slate-950">
+                    <h2 className="font-bold text-slate-950 dark:text-white">
                       Analyse IA
                     </h2>
 
-                    <p className="mt-0.5 text-sm text-slate-500">
-                      Résultat structuré produit automatiquement
-                      par le pipeline LangGraph4j.
+                    <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+                      Résultat structuré produit automatiquement par l’intelligence artificielle.
                     </p>
                   </div>
                 </div>
               </div>
 
               <div className="p-5 sm:p-7">
-                {aiResultQuery.isLoading && (
-                  <div className="flex items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-6 py-12">
+                {aiResultQuery.isLoading ? (
+                  <div className="flex items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-6 py-12 dark:border-slate-700 dark:bg-slate-800/50">
                     <Loader2
-                      className="size-6 animate-spin text-violet-600"
+                      className="size-6 animate-spin text-violet-600 dark:text-violet-400"
                       aria-hidden="true"
                     />
 
-                    <span className="ml-3 text-sm font-semibold text-slate-600">
+                    <span className="ml-3 text-sm font-semibold text-slate-600 dark:text-slate-300">
                       Chargement de l’analyse IA...
                     </span>
                   </div>
-                )}
+                ) : null}
 
-                {aiResultQuery.isError && (
-                  <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+                {aiResultQuery.isError ? (
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-900/50 dark:bg-amber-950/25">
                     <div className="flex items-start gap-3">
                       <CircleAlert
-                        className="mt-0.5 size-5 shrink-0 text-amber-600"
+                        className="mt-0.5 size-5 shrink-0 text-amber-600 dark:text-amber-400"
                         aria-hidden="true"
                       />
 
                       <div>
-                        <p className="font-bold text-amber-900">
+                        <p className="font-bold text-amber-900 dark:text-amber-300">
                           Analyse IA indisponible
                         </p>
 
-                        <p className="mt-1 text-sm leading-6 text-amber-700">
-                          Aucun résultat IA exploitable n’est encore disponible
-                          pour ce document, ou le traitement n’est pas terminé.
+                        <p className="mt-1 text-sm leading-6 text-amber-700 dark:text-amber-400">
+                          Aucun résultat IA exploitable n’est encore disponible pour ce document, ou le traitement n’est pas terminé.
                         </p>
 
                         <Button
@@ -907,92 +1160,109 @@ export default function DocumentDetails() {
                           onClick={() => {
                             void aiResultQuery.refetch();
                           }}
-                          className="mt-4 rounded-xl border-amber-200 bg-white"
+                          className="mt-4 rounded-xl border-amber-200 bg-white dark:border-amber-900/50 dark:bg-slate-900 dark:text-slate-200"
                         >
                           Réessayer
                         </Button>
                       </div>
                     </div>
                   </div>
-                )}
+                ) : null}
 
                 {!aiResultQuery.isLoading &&
-                  !aiResultQuery.isError &&
-                  aiResult && (
-                    <div className="space-y-7">
-                      {/* MÉTADONNÉES IA */}
-                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                        <article className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
-                          <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
-                            Type
-                          </p>
+                !aiResultQuery.isError &&
+                aiResult ? (
+                  <div className="space-y-7">
+                    {/* =========================================
+                        Métadonnées IA
+                    ========================================= */}
 
-                          <p className="mt-3 font-bold text-slate-950">
-                            {aiResult.fieldsJson?.documentType ??
-                              "Non disponible"}
-                          </p>
-                        </article>
+                    <div
+                      className={[
+                        "grid gap-4 sm:grid-cols-2",
+                        showTechnicalDetails
+                          ? "lg:grid-cols-3 xl:grid-cols-6"
+                          : "lg:grid-cols-3",
+                      ].join(
+                        " ",
+                      )}
+                    >
+                      <article className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 dark:border-slate-700 dark:bg-slate-800/60">
+                        <p className="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                          Type
+                        </p>
 
-                        <article className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
-                          <div className="flex items-center gap-2 text-slate-400">
-                            <Route
-                              className="size-4"
-                              aria-hidden="true"
-                            />
+                        <p className="mt-3 font-bold text-slate-950 dark:text-white">
+                          {aiResult.fieldsJson?.documentType ??
+                            "Non disponible"}
+                        </p>
+                      </article>
 
-                            <p className="text-xs font-bold uppercase tracking-wide">
-                              Route métier
+                      {showTechnicalDetails ? (
+                        <>
+                          <article className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 dark:border-slate-700 dark:bg-slate-800/60">
+                            <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500">
+                              <Route
+                                className="size-4"
+                                aria-hidden="true"
+                              />
+
+                              <p className="text-xs font-bold uppercase tracking-wide">
+                                Route métier
+                              </p>
+                            </div>
+
+                            <p className="mt-3 font-bold text-slate-950 dark:text-white">
+                              {aiResult.fieldsJson?.processingRoute ??
+                                "Non disponible"}
                             </p>
-                          </div>
+                          </article>
 
-                          <p className="mt-3 font-bold text-slate-950">
-                            {aiResult.fieldsJson?.processingRoute ??
-                              "Non disponible"}
-                          </p>
-                        </article>
+                          <article className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 dark:border-slate-700 dark:bg-slate-800/60">
+                            <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500">
+                              <Sparkles
+                                className="size-4"
+                                aria-hidden="true"
+                              />
 
-                        <article className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
-                          <div className="flex items-center gap-2 text-slate-400">
-                            <Sparkles
-                              className="size-4"
-                              aria-hidden="true"
-                            />
+                              <p className="text-xs font-bold uppercase tracking-wide">
+                                Extracteur
+                              </p>
+                            </div>
 
-                            <p className="text-xs font-bold uppercase tracking-wide">
-                              Extracteur
+                            <p className="mt-3 font-bold text-slate-950 dark:text-white">
+                              {aiResult.fieldsJson?.routeExecuted ??
+                                "Non disponible"}
                             </p>
-                          </div>
+                          </article>
 
-                          <p className="mt-3 font-bold text-slate-950">
-                            {aiResult.fieldsJson?.routeExecuted ??
-                              "Non disponible"}
-                          </p>
-                        </article>
+                          <article className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 dark:border-slate-700 dark:bg-slate-800/60">
+                            <p className="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                              Modèle
+                            </p>
 
-                        <article className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
-                          <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
-                            Modèle
-                          </p>
+                            <p className="mt-3 break-words font-bold text-slate-950 dark:text-white">
+                              {aiResult.modelName ??
+                                "Non disponible"}
+                            </p>
+                          </article>
+                        </>
+                      ) : null}
 
-                          <p className="mt-3 break-words font-bold text-slate-950">
-                            {aiResult.modelName ??
-                              "Non disponible"}
-                          </p>
-                        </article>
+                      <article className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-900/50 dark:bg-emerald-500/10">
+                        <p className="text-xs font-bold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+                          Statut
+                        </p>
 
-                        <article className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4">
-                          <p className="text-xs font-bold uppercase tracking-wide text-emerald-600">
-                            Statut
-                          </p>
+                        <p className="mt-3 font-bold text-emerald-800 dark:text-emerald-300">
+                          {aiResult.status ??
+                            "Non disponible"}
+                        </p>
+                      </article>
 
-                          <p className="mt-3 font-bold text-emerald-800">
-                            {aiResult.status ??
-                              "Non disponible"}
-                          </p>
-                        </article>
-
-                        <article className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
-                          <div className="flex items-center gap-2 text-slate-400">
+                      {showTechnicalDetails ? (
+                        <article className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 dark:border-slate-700 dark:bg-slate-800/60">
+                          <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500">
                             <Clock3
                               className="size-4"
                               aria-hidden="true"
@@ -1003,23 +1273,43 @@ export default function DocumentDetails() {
                             </p>
                           </div>
 
-                          <p className="mt-3 font-bold text-slate-950">
+                          <p className="mt-3 font-bold text-slate-950 dark:text-white">
                             {calculateDuration(
                               aiResult.startedAt,
                               aiResult.finishedAt,
                             )}
                           </p>
                         </article>
-                      </div>
+                      ) : (
+                        <article className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 dark:border-slate-700 dark:bg-slate-800/60">
+                          <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500">
+                            <ShieldCheck
+                              className="size-4"
+                              aria-hidden="true"
+                            />
 
-                      {/* DATES IA */}
-                      <div className="grid gap-4 border-t border-slate-100 pt-5 sm:grid-cols-2 lg:grid-cols-3">
+                            <p className="text-xs font-bold uppercase tracking-wide">
+                              Confiance
+                            </p>
+                          </div>
+
+                          <p className="mt-3 font-bold text-slate-950 dark:text-white">
+                            {formatConfidence(
+                              aiResult.confidence,
+                            )}
+                          </p>
+                        </article>
+                      )}
+                    </div>
+
+                    {showTechnicalDetails ? (
+                      <div className="grid gap-4 border-t border-slate-100 pt-5 dark:border-slate-800 sm:grid-cols-2 lg:grid-cols-3">
                         <div>
-                          <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
+                          <p className="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                             Début du traitement IA
                           </p>
 
-                          <p className="mt-2 text-sm font-semibold text-slate-700">
+                          <p className="mt-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
                             {formatDate(
                               aiResult.startedAt,
                             )}
@@ -1027,11 +1317,11 @@ export default function DocumentDetails() {
                         </div>
 
                         <div>
-                          <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
+                          <p className="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                             Fin du traitement IA
                           </p>
 
-                          <p className="mt-2 text-sm font-semibold text-slate-700">
+                          <p className="mt-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
                             {formatDate(
                               aiResult.finishedAt,
                             )}
@@ -1039,507 +1329,550 @@ export default function DocumentDetails() {
                         </div>
 
                         <div>
-                          <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
+                          <p className="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                             Confiance
                           </p>
 
-                          <p className="mt-2 text-sm font-semibold text-slate-700">
+                          <p className="mt-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
                             {formatConfidence(
                               aiResult.confidence,
                             )}
                           </p>
                         </div>
                       </div>
+                    ) : null}
 
-                      {/* FACTURE */}
-                      {isInvoice && (
-                        <section className="border-t border-slate-100 pt-6">
-                          <div className="flex items-center gap-3">
-                            <span className="flex size-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                              <ReceiptText
-                                className="size-5"
-                                aria-hidden="true"
-                              />
-                            </span>
+                    {/* =========================================
+                        Facture
+                    ========================================= */}
 
-                            <div>
-                              <h3 className="font-bold text-slate-950">
-                                Données de la facture
-                              </h3>
+                    {isInvoice ? (
+                      <section className="border-t border-slate-100 pt-6 dark:border-slate-800">
+                        <div className="flex items-center gap-3">
+                          <span className="flex size-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
+                            <ReceiptText
+                              className="size-5"
+                              aria-hidden="true"
+                            />
+                          </span>
 
-                              <p className="mt-1 text-sm text-slate-500">
-                                Informations financières extraites automatiquement.
-                              </p>
-                            </div>
+                          <div>
+                            <h3 className="font-bold text-slate-950 dark:text-white">
+                              Données de la facture
+                            </h3>
+
+                            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                              Informations financières extraites automatiquement.
+                            </p>
                           </div>
+                        </div>
 
-                          <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                            <article className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5">
-                              <div className="flex items-center gap-2 text-slate-400">
-                                <ReceiptText
-                                  className="size-4"
-                                  aria-hidden="true"
-                                />
+                        <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                          {[
+                            {
+                              label:
+                                "N° de facture",
 
-                                <p className="text-xs font-bold uppercase tracking-wide">
-                                  N° de facture
-                                </p>
-                              </div>
+                              value:
+                                invoiceNumber ??
+                                "Non disponible",
 
-                              <p className="mt-3 text-lg font-bold text-slate-950">
-                                {invoiceNumber ??
-                                  "Non disponible"}
-                              </p>
-                            </article>
+                              icon:
+                                ReceiptText,
+                            },
 
-                            <article className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5">
-                              <div className="flex items-center gap-2 text-slate-400">
-                                <CalendarDays
-                                  className="size-4"
-                                  aria-hidden="true"
-                                />
+                            {
+                              label:
+                                "Date",
 
-                                <p className="text-xs font-bold uppercase tracking-wide">
-                                  Date
-                                </p>
-                              </div>
-
-                              <p className="mt-3 font-bold text-slate-950">
-                                {formatSimpleDate(
+                              value:
+                                formatSimpleDate(
                                   invoiceDate,
-                                )}
-                              </p>
-                            </article>
+                                ),
 
-                            <article className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5">
-                              <div className="flex items-center gap-2 text-slate-400">
-                                <UsersRound
-                                  className="size-4"
-                                  aria-hidden="true"
-                                />
+                              icon:
+                                CalendarDays,
+                            },
 
-                                <p className="text-xs font-bold uppercase tracking-wide">
-                                  Fournisseur
-                                </p>
-                              </div>
+                            {
+                              label:
+                                "Fournisseur",
 
-                              <p className="mt-3 font-bold text-slate-950">
-                                {supplier ??
-                                  "Non disponible"}
-                              </p>
-                            </article>
+                              value:
+                                supplier ??
+                                "Non disponible",
 
-                            <article className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5">
-                              <div className="flex items-center gap-2 text-slate-400">
-                                <UserRound
-                                  className="size-4"
-                                  aria-hidden="true"
-                                />
+                              icon:
+                                UsersRound,
+                            },
 
-                                <p className="text-xs font-bold uppercase tracking-wide">
-                                  Client
-                                </p>
-                              </div>
+                            {
+                              label:
+                                "Client",
 
-                              <p className="mt-3 font-bold text-slate-950">
-                                {customer ??
-                                  "Non disponible"}
-                              </p>
-                            </article>
-                          </div>
+                              value:
+                                customer ??
+                                "Non disponible",
 
-                          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                            <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                              <div className="flex items-center gap-2 text-slate-400">
-                                <WalletCards
-                                  className="size-4"
-                                  aria-hidden="true"
-                                />
+                              icon:
+                                UserRound,
+                            },
+                          ].map(
+                            (
+                              item,
+                            ) => {
+                              const Icon =
+                                item.icon;
 
-                                <p className="text-xs font-bold uppercase tracking-wide">
-                                  Montant HT
-                                </p>
-                              </div>
-
-                              <p className="mt-3 text-xl font-bold text-slate-950">
-                                {formatMoney(
-                                  amountExcludingTax,
-                                  currency,
-                                )}
-                              </p>
-                            </article>
-
-                            <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                              <div className="flex items-center gap-2 text-slate-400">
-                                <BadgeEuro
-                                  className="size-4"
-                                  aria-hidden="true"
-                                />
-
-                                <p className="text-xs font-bold uppercase tracking-wide">
-                                  TVA
-                                </p>
-                              </div>
-
-                              <p className="mt-3 text-xl font-bold text-slate-950">
-                                {formatMoney(
-                                  taxAmount,
-                                  currency,
-                                )}
-                              </p>
-                            </article>
-
-                            <article className="rounded-2xl border border-blue-200 bg-blue-50 p-5 md:col-span-2 xl:col-span-2">
-                              <div className="flex items-center gap-2 text-blue-600">
-                                <BadgeEuro
-                                  className="size-4"
-                                  aria-hidden="true"
-                                />
-
-                                <p className="text-xs font-bold uppercase tracking-wide">
-                                  Total TTC
-                                </p>
-                              </div>
-
-                              <p className="mt-3 text-2xl font-bold text-blue-800">
-                                {formatMoney(
-                                  amountIncludingTax,
-                                  currency,
-                                )}
-                              </p>
-                            </article>
-                          </div>
-
-                          <div className="mt-4 flex items-center gap-2 text-sm text-slate-500">
-                            <span className="font-semibold">
-                              Devise :
-                            </span>
-
-                            <span>
-                              {currency ??
-                                "Non disponible"}
-                            </span>
-                          </div>
-                        </section>
-                      )}
-
-                      {/* EXTRACTION GÉNÉRIQUE */}
-                      {!isInvoice &&
-                        hasGenericStructuredData && (
-                          <>
-                            {aiSummary && (
-                              <section className="rounded-2xl border border-blue-100 bg-blue-50/50 p-5">
-                                <div className="flex items-start gap-3">
-                                  <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl bg-white text-blue-600 shadow-sm">
-                                    <BrainCircuit
+                              return (
+                                <article
+                                  key={
+                                    item.label
+                                  }
+                                  className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5 dark:border-slate-700 dark:bg-slate-800/60"
+                                >
+                                  <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500">
+                                    <Icon
                                       className="size-4"
                                       aria-hidden="true"
                                     />
-                                  </span>
 
-                                  <div>
-                                    <h3 className="font-bold text-slate-950">
-                                      Résumé IA
-                                    </h3>
-
-                                    <p className="mt-2 text-sm leading-7 text-slate-700">
-                                      {aiSummary}
+                                    <p className="text-xs font-bold uppercase tracking-wide">
+                                      {
+                                        item.label
+                                      }
                                     </p>
                                   </div>
-                                </div>
-                              </section>
-                            )}
 
-                            {importantFields.length > 0 && (
-                              <section className="border-t border-slate-100 pt-6">
-                                <h3 className="font-bold text-slate-950">
-                                  Champs importants
+                                  <p className="mt-3 font-bold text-slate-950 dark:text-white">
+                                    {
+                                      item.value
+                                    }
+                                  </p>
+                                </article>
+                              );
+                            },
+                          )}
+                        </div>
+
+                        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                          <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+                            <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500">
+                              <WalletCards
+                                className="size-4"
+                                aria-hidden="true"
+                              />
+
+                              <p className="text-xs font-bold uppercase tracking-wide">
+                                Montant HT
+                              </p>
+                            </div>
+
+                            <p className="mt-3 text-xl font-bold text-slate-950 dark:text-white">
+                              {formatMoney(
+                                amountExcludingTax,
+                                currency,
+                              )}
+                            </p>
+                          </article>
+
+                          <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+                            <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500">
+                              <BadgeEuro
+                                className="size-4"
+                                aria-hidden="true"
+                              />
+
+                              <p className="text-xs font-bold uppercase tracking-wide">
+                                TVA
+                              </p>
+                            </div>
+
+                            <p className="mt-3 text-xl font-bold text-slate-950 dark:text-white">
+                              {formatMoney(
+                                taxAmount,
+                                currency,
+                              )}
+                            </p>
+                          </article>
+
+                          <article className="rounded-2xl border border-blue-200 bg-blue-50 p-5 dark:border-blue-900/50 dark:bg-blue-500/10 md:col-span-2 xl:col-span-2">
+                            <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+                              <BadgeEuro
+                                className="size-4"
+                                aria-hidden="true"
+                              />
+
+                              <p className="text-xs font-bold uppercase tracking-wide">
+                                Total TTC
+                              </p>
+                            </div>
+
+                            <p className="mt-3 text-2xl font-bold text-blue-800 dark:text-blue-300">
+                              {formatMoney(
+                                amountIncludingTax,
+                                currency,
+                              )}
+                            </p>
+                          </article>
+                        </div>
+
+                        <div className="mt-4 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                          <span className="font-semibold">
+                            Devise :
+                          </span>
+
+                          <span>
+                            {currency ??
+                              "Non disponible"}
+                          </span>
+                        </div>
+                      </section>
+                    ) : null}
+
+                    {/* =========================================
+                        Extraction générique
+                    ========================================= */}
+
+                    {!isInvoice &&
+                    hasGenericStructuredData ? (
+                      <>
+                        {aiSummary ? (
+                          <section className="rounded-2xl border border-blue-100 bg-blue-50/50 p-5 dark:border-blue-900/40 dark:bg-blue-500/5">
+                            <div className="flex items-start gap-3">
+                              <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl bg-white text-blue-600 shadow-sm dark:bg-slate-900 dark:text-blue-400">
+                                <BrainCircuit
+                                  className="size-4"
+                                  aria-hidden="true"
+                                />
+                              </span>
+
+                              <div>
+                                <h3 className="font-bold text-slate-950 dark:text-white">
+                                  Résumé IA
                                 </h3>
 
-                                <p className="mt-1 text-sm text-slate-500">
-                                  Informations principales identifiées
-                                  automatiquement dans le document.
+                                <p className="mt-2 text-sm leading-7 text-slate-700 dark:text-slate-300">
+                                  {
+                                    aiSummary
+                                  }
                                 </p>
+                              </div>
+                            </div>
+                          </section>
+                        ) : null}
 
-                                <div className="mt-4 grid gap-4 md:grid-cols-2">
-                                  {importantFields.map(
-                                    (
-                                      field,
-                                      index,
-                                    ) => (
-                                      <article
-                                        key={`${field.name}-${index}`}
-                                        className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5"
-                                      >
-                                        <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
-                                          {field.name}
-                                        </p>
+                        {importantFields.length >
+                        0 ? (
+                          <section className="border-t border-slate-100 pt-6 dark:border-slate-800">
+                            <h3 className="font-bold text-slate-950 dark:text-white">
+                              Champs importants
+                            </h3>
 
-                                        <p className="mt-3 text-sm font-semibold leading-6 text-slate-800">
-                                          {field.value}
-                                        </p>
-                                      </article>
-                                    ),
-                                  )}
-                                </div>
-                              </section>
-                            )}
+                            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                              Informations principales identifiées automatiquement dans le document.
+                            </p>
 
-                            {entities.length > 0 && (
-                              <section className="border-t border-slate-100 pt-6">
+                            <div className="mt-4 grid gap-4 md:grid-cols-2">
+                              {importantFields.map(
+                                (
+                                  field,
+                                  index,
+                                ) => (
+                                  <article
+                                    key={`${field.name}-${index}`}
+                                    className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5 dark:border-slate-700 dark:bg-slate-800/60"
+                                  >
+                                    <p className="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                                      {
+                                        field.name
+                                      }
+                                    </p>
+
+                                    <p className="mt-3 text-sm font-semibold leading-6 text-slate-800 dark:text-slate-200">
+                                      {
+                                        field.value
+                                      }
+                                    </p>
+                                  </article>
+                                ),
+                              )}
+                            </div>
+                          </section>
+                        ) : null}
+
+                        {entities.length >
+                        0 ? (
+                          <section className="border-t border-slate-100 pt-6 dark:border-slate-800">
+                            <div className="flex items-center gap-2">
+                              <Tags
+                                className="size-4 text-slate-500 dark:text-slate-400"
+                                aria-hidden="true"
+                              />
+
+                              <h3 className="font-bold text-slate-950 dark:text-white">
+                                Entités identifiées
+                              </h3>
+                            </div>
+
+                            <div className="mt-4 flex flex-wrap gap-2">
+                              {entities.map(
+                                (
+                                  entity,
+                                  index,
+                                ) => (
+                                  <span
+                                    key={`${entity}-${index}`}
+                                    className="rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 dark:border-blue-900/50 dark:bg-blue-500/10 dark:text-blue-400"
+                                  >
+                                    {
+                                      entity
+                                    }
+                                  </span>
+                                ),
+                              )}
+                            </div>
+                          </section>
+                        ) : null}
+
+                        {(dates.length >
+                          0 ||
+                          amounts.length >
+                            0) ? (
+                          <section className="grid gap-5 border-t border-slate-100 pt-6 dark:border-slate-800 lg:grid-cols-2">
+                            {dates.length >
+                            0 ? (
+                              <div className="rounded-2xl border border-slate-200 p-5 dark:border-slate-700">
                                 <div className="flex items-center gap-2">
-                                  <Tags
-                                    className="size-4 text-slate-500"
+                                  <CalendarDays
+                                    className="size-4 text-slate-500 dark:text-slate-400"
                                     aria-hidden="true"
                                   />
 
-                                  <h3 className="font-bold text-slate-950">
-                                    Entités identifiées
+                                  <h3 className="font-bold text-slate-950 dark:text-white">
+                                    Dates détectées
                                   </h3>
                                 </div>
 
                                 <div className="mt-4 flex flex-wrap gap-2">
-                                  {entities.map(
+                                  {dates.map(
                                     (
-                                      entity,
+                                      date,
                                       index,
                                     ) => (
                                       <span
-                                        key={`${entity}-${index}`}
-                                        className="rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700"
+                                        key={`${date}-${index}`}
+                                        className="rounded-xl bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-300"
                                       >
-                                        {entity}
+                                        {
+                                          date
+                                        }
                                       </span>
                                     ),
                                   )}
                                 </div>
-                              </section>
-                            )}
+                              </div>
+                            ) : null}
 
-                            {(dates.length > 0 ||
-                              amounts.length > 0) && (
-                              <section className="grid gap-5 border-t border-slate-100 pt-6 lg:grid-cols-2">
-                                {dates.length > 0 && (
-                                  <div className="rounded-2xl border border-slate-200 p-5">
-                                    <div className="flex items-center gap-2">
-                                      <CalendarDays
-                                        className="size-4 text-slate-500"
-                                        aria-hidden="true"
-                                      />
-
-                                      <h3 className="font-bold text-slate-950">
-                                        Dates détectées
-                                      </h3>
-                                    </div>
-
-                                    <div className="mt-4 flex flex-wrap gap-2">
-                                      {dates.map(
-                                        (
-                                          date,
-                                          index,
-                                        ) => (
-                                          <span
-                                            key={`${date}-${index}`}
-                                            className="rounded-xl bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-700"
-                                          >
-                                            {date}
-                                          </span>
-                                        ),
-                                      )}
-                                    </div>
-                                  </div>
-                                )}
-
-                                {amounts.length > 0 && (
-                                  <div className="rounded-2xl border border-slate-200 p-5">
-                                    <h3 className="font-bold text-slate-950">
-                                      Montants / valeurs numériques
-                                    </h3>
-
-                                    <div className="mt-4 flex flex-wrap gap-2">
-                                      {amounts.map(
-                                        (
-                                          amount,
-                                          index,
-                                        ) => (
-                                          <span
-                                            key={`${amount}-${index}`}
-                                            className="rounded-xl bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-700"
-                                          >
-                                            {amount}
-                                          </span>
-                                        ),
-                                      )}
-                                    </div>
-                                  </div>
-                                )}
-                              </section>
-                            )}
-
-                            {references.length > 0 && (
-                              <section className="border-t border-slate-100 pt-6">
-                                <h3 className="font-bold text-slate-950">
-                                  Références détectées
+                            {amounts.length >
+                            0 ? (
+                              <div className="rounded-2xl border border-slate-200 p-5 dark:border-slate-700">
+                                <h3 className="font-bold text-slate-950 dark:text-white">
+                                  Montants / valeurs numériques
                                 </h3>
 
                                 <div className="mt-4 flex flex-wrap gap-2">
-                                  {references.map(
+                                  {amounts.map(
                                     (
-                                      reference,
+                                      amount,
                                       index,
                                     ) => (
                                       <span
-                                        key={`${reference}-${index}`}
-                                        className="rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono text-xs font-semibold text-slate-600"
+                                        key={`${amount}-${index}`}
+                                        className="rounded-xl bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-300"
                                       >
-                                        {reference}
+                                        {
+                                          amount
+                                        }
                                       </span>
                                     ),
                                   )}
                                 </div>
-                              </section>
-                            )}
-                          </>
-                        )}
+                              </div>
+                            ) : null}
+                          </section>
+                        ) : null}
 
-                      {/* FALLBACK */}
-                      {!isInvoice &&
-                        !hasGenericStructuredData &&
-                        aiFields && (
-                          <section className="border-t border-slate-100 pt-6">
-                            <div className="mb-4">
-                              <h3 className="font-bold text-slate-950">
-                                Données structurées
-                              </h3>
+                        {references.length >
+                        0 ? (
+                          <section className="border-t border-slate-100 pt-6 dark:border-slate-800">
+                            <h3 className="font-bold text-slate-950 dark:text-white">
+                              Références détectées
+                            </h3>
 
-                              <p className="mt-1 text-sm text-slate-500">
-                                Résultat métier produit par le pipeline IA.
-                              </p>
-                            </div>
-
-                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                              <pre className="overflow-x-auto whitespace-pre-wrap break-words font-mono text-sm leading-7 text-slate-700">
-                                {JSON.stringify(
-                                  aiFields,
-                                  null,
-                                  2,
-                                )}
-                              </pre>
+                            <div className="mt-4 flex flex-wrap gap-2">
+                              {references.map(
+                                (
+                                  reference,
+                                  index,
+                                ) => (
+                                  <span
+                                    key={`${reference}-${index}`}
+                                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                                  >
+                                    {
+                                      reference
+                                    }
+                                  </span>
+                                ),
+                              )}
                             </div>
                           </section>
-                        )}
+                        ) : null}
+                      </>
+                    ) : null}
 
-                      {!aiFields && (
-                        <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center">
-                          <BrainCircuit
-                            className="mx-auto size-6 text-slate-400"
-                            aria-hidden="true"
-                          />
+                    {!isInvoice &&
+                    !hasGenericStructuredData &&
+                    aiFields ? (
+                      <section className="border-t border-slate-100 pt-6 dark:border-slate-800">
+                        <div className="mb-4">
+                          <h3 className="font-bold text-slate-950 dark:text-white">
+                            Données structurées
+                          </h3>
 
-                          <p className="mt-3 text-sm font-semibold text-slate-700">
-                            Aucun champ structuré disponible
+                          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                            Résultat métier produit par le pipeline IA.
                           </p>
                         </div>
-                      )}
-                    </div>
-                  )}
+
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-950">
+                          <pre className="overflow-x-auto whitespace-pre-wrap break-words font-mono text-sm leading-7 text-slate-700 dark:text-slate-300">
+                            {JSON.stringify(
+                              aiFields,
+                              null,
+                              2,
+                            )}
+                          </pre>
+                        </div>
+                      </section>
+                    ) : null}
+
+                    {!aiFields ? (
+                      <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center dark:border-slate-700 dark:bg-slate-800/50">
+                        <BrainCircuit
+                          className="mx-auto size-6 text-slate-400 dark:text-slate-500"
+                          aria-hidden="true"
+                        />
+
+                        <p className="mt-3 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                          Aucun champ structuré disponible
+                        </p>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
             </section>
 
-            {/* HISTORIQUE IA */}
-            <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-              <div className="border-b border-slate-100 px-5 py-5 sm:px-7">
-                <div className="flex items-center gap-3">
-                  <span className="flex size-11 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-700">
-                    <History
-                      className="size-5"
-                      aria-hidden="true"
-                    />
-                  </span>
+            {/* =================================================
+                Historique IA
+                Visible uniquement en mode détaillé
+            ================================================= */}
 
-                  <div>
-                    <h2 className="font-bold text-slate-950">
-                      Historique des traitements IA
-                    </h2>
-
-                    <p className="mt-0.5 text-sm text-slate-500">
-                      Exécutions successives du pipeline IA réalisées
-                      sur ce document.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-5 sm:p-7">
-                {aiHistoryQuery.isLoading && (
-                  <div className="flex items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-6 py-12">
-                    <Loader2
-                      className="size-6 animate-spin text-indigo-600"
-                      aria-hidden="true"
-                    />
-
-                    <span className="ml-3 text-sm font-semibold text-slate-600">
-                      Chargement de l’historique IA...
-                    </span>
-                  </div>
-                )}
-
-                {aiHistoryQuery.isError && (
-                  <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
-                    <div className="flex items-start gap-3">
-                      <CircleAlert
-                        className="mt-0.5 size-5 shrink-0 text-amber-600"
+            {showTechnicalDetails ? (
+              <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                <div className="border-b border-slate-100 px-5 py-5 dark:border-slate-800 sm:px-7">
+                  <div className="flex items-center gap-3">
+                    <span className="flex size-11 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-400">
+                      <History
+                        className="size-5"
                         aria-hidden="true"
                       />
+                    </span>
 
-                      <div>
-                        <p className="font-bold text-amber-900">
-                          Historique IA indisponible
-                        </p>
+                    <div>
+                      <h2 className="font-bold text-slate-950 dark:text-white">
+                        Historique des traitements IA
+                      </h2>
 
-                        <p className="mt-1 text-sm leading-6 text-amber-700">
-                          Les anciennes exécutions IA n’ont pas pu être
-                          récupérées depuis le backend.
-                        </p>
-
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => {
-                            void aiHistoryQuery.refetch();
-                          }}
-                          className="mt-4 rounded-xl border-amber-200 bg-white"
-                        >
-                          Réessayer
-                        </Button>
-                      </div>
+                      <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+                        Exécutions successives du pipeline IA réalisées sur ce document.
+                      </p>
                     </div>
                   </div>
-                )}
+                </div>
 
-                {!aiHistoryQuery.isLoading &&
-                  !aiHistoryQuery.isError &&
-                  aiHistory.length === 0 && (
-                    <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center">
-                      <History
-                        className="mx-auto size-6 text-slate-400"
+                <div className="p-5 sm:p-7">
+                  {aiHistoryQuery.isLoading ? (
+                    <div className="flex items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-6 py-12 dark:border-slate-700 dark:bg-slate-800/50">
+                      <Loader2
+                        className="size-6 animate-spin text-indigo-600 dark:text-indigo-400"
                         aria-hidden="true"
                       />
 
-                      <p className="mt-3 text-sm font-semibold text-slate-700">
+                      <span className="ml-3 text-sm font-semibold text-slate-600 dark:text-slate-300">
+                        Chargement de l’historique IA...
+                      </span>
+                    </div>
+                  ) : null}
+
+                  {aiHistoryQuery.isError ? (
+                    <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-900/50 dark:bg-amber-950/25">
+                      <div className="flex items-start gap-3">
+                        <CircleAlert
+                          className="mt-0.5 size-5 shrink-0 text-amber-600 dark:text-amber-400"
+                          aria-hidden="true"
+                        />
+
+                        <div>
+                          <p className="font-bold text-amber-900 dark:text-amber-300">
+                            Historique IA indisponible
+                          </p>
+
+                          <p className="mt-1 text-sm leading-6 text-amber-700 dark:text-amber-400">
+                            Les anciennes exécutions IA n’ont pas pu être récupérées depuis le backend.
+                          </p>
+
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                              void aiHistoryQuery.refetch();
+                            }}
+                            className="mt-4 rounded-xl border-amber-200 bg-white dark:border-amber-900/50 dark:bg-slate-900 dark:text-slate-200"
+                          >
+                            Réessayer
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {!aiHistoryQuery.isLoading &&
+                  !aiHistoryQuery.isError &&
+                  aiHistory.length ===
+                    0 ? (
+                    <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center dark:border-slate-700 dark:bg-slate-800/50">
+                      <History
+                        className="mx-auto size-6 text-slate-400 dark:text-slate-500"
+                        aria-hidden="true"
+                      />
+
+                      <p className="mt-3 text-sm font-semibold text-slate-700 dark:text-slate-300">
                         Aucun historique IA disponible
                       </p>
 
-                      <p className="mt-1 text-sm text-slate-500">
-                        Aucun traitement IA n’a encore été enregistré
-                        pour ce document.
+                      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                        Aucun traitement IA n’a encore été enregistré pour ce document.
                       </p>
                     </div>
-                  )}
+                  ) : null}
 
-                {!aiHistoryQuery.isLoading &&
+                  {!aiHistoryQuery.isLoading &&
                   !aiHistoryQuery.isError &&
-                  aiHistory.length > 0 && (
+                  aiHistory.length >
+                    0 ? (
                     <div className="space-y-4">
                       {aiHistory.map(
                         (
@@ -1547,22 +1880,27 @@ export default function DocumentDetails() {
                           index,
                         ) => {
                           const isSuccess =
-                            run.status === "SUCCESS";
+                            run.status ===
+                            "SUCCESS";
 
                           const isProcessing =
-                            run.status === "PROCESSING";
+                            run.status ===
+                            "PROCESSING";
 
                           const isExpanded =
                             expandedAiRunId ===
                             run.llmRunId;
 
                           const isLatest =
-                            index === 0;
+                            index ===
+                            0;
 
                           return (
                             <article
-                              key={run.llmRunId}
-                              className="overflow-hidden rounded-2xl border border-slate-200 bg-white"
+                              key={
+                                run.llmRunId
+                              }
+                              className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800/40"
                             >
                               <div className="p-5">
                                 <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
@@ -1570,10 +1908,10 @@ export default function DocumentDetails() {
                                     <span
                                       className={
                                         isSuccess
-                                          ? "flex size-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600"
+                                          ? "flex size-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400"
                                           : isProcessing
-                                            ? "flex size-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600"
-                                            : "flex size-11 shrink-0 items-center justify-center rounded-2xl bg-red-50 text-red-600"
+                                            ? "flex size-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
+                                            : "flex size-11 shrink-0 items-center justify-center rounded-2xl bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400"
                                       }
                                     >
                                       {isSuccess ? (
@@ -1596,30 +1934,32 @@ export default function DocumentDetails() {
 
                                     <div>
                                       <div className="flex flex-wrap items-center gap-2">
-                                        <h3 className="font-bold text-slate-950">
+                                        <h3 className="font-bold text-slate-950 dark:text-white">
                                           Run #{run.llmRunId}
                                         </h3>
 
                                         <span
                                           className={
                                             isSuccess
-                                              ? "rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700"
+                                              ? "rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
                                               : isProcessing
-                                                ? "rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700"
-                                                : "rounded-full bg-red-50 px-2.5 py-1 text-xs font-bold text-red-700"
+                                                ? "rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700 dark:bg-blue-500/10 dark:text-blue-400"
+                                                : "rounded-full bg-red-50 px-2.5 py-1 text-xs font-bold text-red-700 dark:bg-red-500/10 dark:text-red-400"
                                           }
                                         >
-                                          {run.status}
+                                          {
+                                            run.status
+                                          }
                                         </span>
 
-                                        {isLatest && (
-                                          <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-bold text-indigo-700">
+                                        {isLatest ? (
+                                          <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-bold text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-400">
                                             Plus récent
                                           </span>
-                                        )}
+                                        ) : null}
                                       </div>
 
-                                      <p className="mt-2 text-sm text-slate-500">
+                                      <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
                                         {formatDate(
                                           run.startedAt,
                                         )}
@@ -1628,19 +1968,19 @@ export default function DocumentDetails() {
                                   </div>
 
                                   <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                                    <div className="min-w-40 rounded-xl bg-slate-50 px-4 py-3">
-                                      <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                                    <div className="min-w-40 rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-800">
+                                      <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                                         Modèle
                                       </p>
 
-                                      <p className="mt-1 break-words text-sm font-semibold text-slate-700">
+                                      <p className="mt-1 break-words text-sm font-semibold text-slate-700 dark:text-slate-300">
                                         {run.modelName ??
                                           "Non disponible"}
                                       </p>
                                     </div>
 
-                                    <div className="min-w-32 rounded-xl bg-slate-50 px-4 py-3">
-                                      <div className="flex items-center gap-1.5 text-slate-400">
+                                    <div className="min-w-32 rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-800">
+                                      <div className="flex items-center gap-1.5 text-slate-400 dark:text-slate-500">
                                         <Clock3
                                           className="size-3.5"
                                           aria-hidden="true"
@@ -1651,19 +1991,19 @@ export default function DocumentDetails() {
                                         </p>
                                       </div>
 
-                                      <p className="mt-1 text-sm font-semibold text-slate-700">
+                                      <p className="mt-1 text-sm font-semibold text-slate-700 dark:text-slate-300">
                                         {formatDurationMs(
                                           run.durationMs,
                                         )}
                                       </p>
                                     </div>
 
-                                    <div className="min-w-32 rounded-xl bg-slate-50 px-4 py-3">
-                                      <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                                    <div className="min-w-32 rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-800">
+                                      <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                                         Confiance
                                       </p>
 
-                                      <p className="mt-1 text-sm font-semibold text-slate-700">
+                                      <p className="mt-1 text-sm font-semibold text-slate-700 dark:text-slate-300">
                                         {formatConfidence(
                                           run.confidence,
                                         )}
@@ -1672,13 +2012,13 @@ export default function DocumentDetails() {
                                   </div>
                                 </div>
 
-                                <div className="mt-5 grid gap-4 border-t border-slate-100 pt-4 sm:grid-cols-2">
+                                <div className="mt-5 grid gap-4 border-t border-slate-100 pt-4 dark:border-slate-700 sm:grid-cols-2">
                                   <div>
-                                    <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
+                                    <p className="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                                       Début
                                     </p>
 
-                                    <p className="mt-1 text-sm font-semibold text-slate-700">
+                                    <p className="mt-1 text-sm font-semibold text-slate-700 dark:text-slate-300">
                                       {formatDate(
                                         run.startedAt,
                                       )}
@@ -1686,11 +2026,11 @@ export default function DocumentDetails() {
                                   </div>
 
                                   <div>
-                                    <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
+                                    <p className="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                                       Fin
                                     </p>
 
-                                    <p className="mt-1 text-sm font-semibold text-slate-700">
+                                    <p className="mt-1 text-sm font-semibold text-slate-700 dark:text-slate-300">
                                       {formatDate(
                                         run.finishedAt,
                                       )}
@@ -1699,126 +2039,145 @@ export default function DocumentDetails() {
                                 </div>
 
                                 {isSuccess &&
-                                  run.fields && (
-                                    <div className="mt-5 border-t border-slate-100 pt-4">
-                                      <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={() => {
-                                          setExpandedAiRunId(
-                                            isExpanded
-                                              ? null
-                                              : run.llmRunId,
-                                          );
-                                        }}
-                                        className="rounded-xl"
-                                      >
-                                        {isExpanded ? (
-                                          <ChevronUp
-                                            className="size-4"
-                                            aria-hidden="true"
-                                          />
-                                        ) : (
-                                          <ChevronDown
-                                            className="size-4"
-                                            aria-hidden="true"
-                                          />
-                                        )}
+                                run.fields ? (
+                                  <div className="mt-5 border-t border-slate-100 pt-4 dark:border-slate-700">
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      onClick={() => {
+                                        setExpandedAiRunId(
+                                          isExpanded
+                                            ? null
+                                            : run.llmRunId,
+                                        );
+                                      }}
+                                      className="rounded-xl dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+                                    >
+                                      {isExpanded ? (
+                                        <ChevronUp
+                                          className="size-4"
+                                          aria-hidden="true"
+                                        />
+                                      ) : (
+                                        <ChevronDown
+                                          className="size-4"
+                                          aria-hidden="true"
+                                        />
+                                      )}
 
-                                        {isExpanded
-                                          ? "Masquer le résultat"
-                                          : "Voir le résultat"}
-                                      </Button>
-                                    </div>
-                                  )}
+                                      {isExpanded
+                                        ? "Masquer le résultat"
+                                        : "Voir le résultat"}
+                                    </Button>
+                                  </div>
+                                ) : null}
 
                                 {!isSuccess &&
-                                  !isProcessing && (
-                                    <div className="mt-5 rounded-xl border border-red-100 bg-red-50/60 px-4 py-3">
-                                      <p className="text-sm font-medium text-red-700">
-                                        Cette exécution a échoué. Aucun résultat
-                                        métier n’est disponible.
-                                      </p>
-                                    </div>
-                                  )}
+                                !isProcessing ? (
+                                  <div className="mt-5 rounded-xl border border-red-100 bg-red-50/60 px-4 py-3 dark:border-red-900/50 dark:bg-red-950/25">
+                                    <p className="text-sm font-medium text-red-700 dark:text-red-400">
+                                      Cette exécution a échoué. Aucun résultat métier n’est disponible.
+                                    </p>
+                                  </div>
+                                ) : null}
 
-                                {isProcessing && (
-                                  <div className="mt-5 rounded-xl border border-blue-100 bg-blue-50/60 px-4 py-3">
-                                    <p className="text-sm font-medium text-blue-700">
+                                {isProcessing ? (
+                                  <div className="mt-5 rounded-xl border border-blue-100 bg-blue-50/60 px-4 py-3 dark:border-blue-900/50 dark:bg-blue-500/10">
+                                    <p className="text-sm font-medium text-blue-700 dark:text-blue-400">
                                       Cette exécution est toujours en cours.
                                     </p>
                                   </div>
-                                )}
+                                ) : null}
                               </div>
 
                               {isExpanded &&
-                                run.fields && (
-                                  <div className="border-t border-slate-200 bg-slate-50/60 p-5">
-                                    <div className="mb-4 flex items-center gap-2">
-                                      <BrainCircuit
-                                        className="size-4 text-indigo-600"
-                                        aria-hidden="true"
-                                      />
+                              run.fields ? (
+                                <div className="border-t border-slate-200 bg-slate-50/60 p-5 dark:border-slate-700 dark:bg-slate-950/60">
+                                  <div className="mb-4 flex items-center gap-2">
+                                    <BrainCircuit
+                                      className="size-4 text-indigo-600 dark:text-indigo-400"
+                                      aria-hidden="true"
+                                    />
 
-                                      <h4 className="font-bold text-slate-950">
-                                        Résultat du Run #{run.llmRunId}
-                                      </h4>
-                                    </div>
-
-                                    <div className="mb-4 grid gap-3 sm:grid-cols-3">
-                                      <div className="rounded-xl border border-slate-200 bg-white p-4">
-                                        <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
-                                          Type
-                                        </p>
-
-                                        <p className="mt-2 text-sm font-semibold text-slate-800">
-                                          {run.fields.documentType ??
-                                            "Non disponible"}
-                                        </p>
-                                      </div>
-
-                                      <div className="rounded-xl border border-slate-200 bg-white p-4">
-                                        <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
-                                          Route métier
-                                        </p>
-
-                                        <p className="mt-2 text-sm font-semibold text-slate-800">
-                                          {run.fields.processingRoute ??
-                                            "Non disponible"}
-                                        </p>
-                                      </div>
-
-                                      <div className="rounded-xl border border-slate-200 bg-white p-4">
-                                        <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
-                                          Extracteur
-                                        </p>
-
-                                        <p className="mt-2 text-sm font-semibold text-slate-800">
-                                          {run.fields.routeExecuted ??
-                                            "Non disponible"}
-                                        </p>
-                                      </div>
-                                    </div>
-
-                                    <pre className="max-h-[500px] overflow-auto whitespace-pre-wrap break-words rounded-2xl border border-slate-200 bg-white p-5 font-mono text-xs leading-6 text-slate-700">
-                                      {JSON.stringify(
-                                        run.fields.fields,
-                                        null,
-                                        2,
-                                      )}
-                                    </pre>
+                                    <h4 className="font-bold text-slate-950 dark:text-white">
+                                      Résultat du Run #{run.llmRunId}
+                                    </h4>
                                   </div>
-                                )}
+
+                                  <div className="mb-4 grid gap-3 sm:grid-cols-3">
+                                    {[
+                                      {
+                                        label:
+                                          "Type",
+
+                                        value:
+                                          run.fields.documentType ??
+                                          "Non disponible",
+                                      },
+
+                                      {
+                                        label:
+                                          "Route métier",
+
+                                        value:
+                                          run.fields.processingRoute ??
+                                          "Non disponible",
+                                      },
+
+                                      {
+                                        label:
+                                          "Extracteur",
+
+                                        value:
+                                          run.fields.routeExecuted ??
+                                          "Non disponible",
+                                      },
+                                    ].map(
+                                      (
+                                        item,
+                                      ) => (
+                                        <div
+                                          key={
+                                            item.label
+                                          }
+                                          className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900"
+                                        >
+                                          <p className="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                                            {
+                                              item.label
+                                            }
+                                          </p>
+
+                                          <p className="mt-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
+                                            {
+                                              item.value
+                                            }
+                                          </p>
+                                        </div>
+                                      ),
+                                    )}
+                                  </div>
+
+                                  <pre className="max-h-[500px] overflow-auto whitespace-pre-wrap break-words rounded-2xl border border-slate-200 bg-white p-5 font-mono text-xs leading-6 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                                    {JSON.stringify(
+                                      run.fields.fields,
+                                      null,
+                                      2,
+                                    )}
+                                  </pre>
+                                </div>
+                              ) : null}
                             </article>
                           );
                         },
                       )}
                     </div>
-                  )}
-              </div>
-            </section>
+                  ) : null}
+                </div>
+              </section>
+            ) : null}
           </>
-        )}
+        ) : null}
       </div>
     </DashboardLayout>
   );

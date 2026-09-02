@@ -22,6 +22,8 @@ export const ROUTES = {
 
   users: "/users",
 
+  extractionBenchmark: "/extraction-benchmark",
+
   activity: "/dashboard/activity",
   settings: "/dashboard/settings",
 } as const;

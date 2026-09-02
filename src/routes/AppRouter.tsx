@@ -4,26 +4,28 @@ import {
   Routes,
 } from "react-router-dom";
 
+import ConversationDetail from "@/pages/ConversationDetail";
+import Conversations from "@/pages/Conversations";
 import Dashboard from "@/pages/Dashboard";
 import DocumentDetails from "@/pages/DocumentDetails";
 import DocumentQuestions from "@/pages/DocumentQuestions";
 import Documents from "@/pages/Documents";
 import DocumentUpload from "@/pages/DocumentUpload";
+import ExtractionBenchmarkPage from "@/pages/ExtractionBenchmarkPage";
 import Home from "@/pages/Home";
 import Login from "@/pages/Login";
 import Profile from "@/pages/Profile";
 import Register from "@/pages/Register";
-import Conversations from "@/pages/Conversations";
-import ConversationDetail from "@/pages/ConversationDetail";
+import Settings from "@/pages/Settings";
 import Users from "@/pages/Users";
-
-import {
-  ProtectedRoute,
-} from "@/routes/ProtectedRoute";
 
 import {
   AdminRoute,
 } from "@/routes/AdminRoute";
+
+import {
+  ProtectedRoute,
+} from "@/routes/ProtectedRoute";
 
 import {
   ROUTES,
@@ -35,13 +37,13 @@ function TemporaryPage({
   title: string;
 }) {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-5">
-      <div className="rounded-3xl border border-slate-200 bg-white p-10 text-center shadow-xl shadow-slate-950/5">
-        <p className="text-sm font-bold uppercase tracking-[0.18em] text-blue-600">
+    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-5 transition-colors dark:bg-slate-950">
+      <div className="rounded-3xl border border-slate-200 bg-white p-10 text-center shadow-xl shadow-slate-950/5 transition-colors dark:border-slate-800 dark:bg-slate-900">
+        <p className="text-sm font-bold uppercase tracking-[0.18em] text-blue-600 dark:text-blue-400">
           Prochaine étape
         </p>
 
-        <h1 className="mt-4 text-3xl font-bold text-slate-950">
+        <h1 className="mt-4 text-3xl font-bold text-slate-950 dark:text-white">
           {title}
         </h1>
       </div>
@@ -52,32 +54,56 @@ function TemporaryPage({
 export function AppRouter() {
   return (
     <Routes>
-      {/* Routes publiques */}
-      <Route
-        path={ROUTES.home}
-        element={<Home />}
-      />
+      {/* ============================= */}
+      {/* Routes publiques             */}
+      {/* ============================= */}
 
       <Route
-        path={ROUTES.login}
-        element={<Login />}
-      />
-
-      <Route
-        path={ROUTES.register}
-        element={<Register />}
-      />
-
-      <Route
-        path={ROUTES.forgotPassword}
+        path={
+          ROUTES.home
+        }
         element={
-          <TemporaryPage title="Mot de passe oublié" />
+          <Home />
         }
       />
 
-      {/* Routes protégées */}
       <Route
-        path={ROUTES.dashboard}
+        path={
+          ROUTES.login
+        }
+        element={
+          <Login />
+        }
+      />
+
+      <Route
+        path={
+          ROUTES.register
+        }
+        element={
+          <Register />
+        }
+      />
+
+      <Route
+        path={
+          ROUTES.forgotPassword
+        }
+        element={
+          <TemporaryPage
+            title="Mot de passe oublié"
+          />
+        }
+      />
+
+      {/* ============================= */}
+      {/* Routes protégées             */}
+      {/* ============================= */}
+
+      <Route
+        path={
+          ROUTES.dashboard
+        }
         element={
           <ProtectedRoute>
             <Dashboard />
@@ -86,7 +112,9 @@ export function AppRouter() {
       />
 
       <Route
-        path={ROUTES.profile}
+        path={
+          ROUTES.profile
+        }
         element={
           <ProtectedRoute>
             <Profile />
@@ -95,7 +123,9 @@ export function AppRouter() {
       />
 
       <Route
-        path={ROUTES.documents}
+        path={
+          ROUTES.documents
+        }
         element={
           <ProtectedRoute>
             <Documents />
@@ -104,7 +134,9 @@ export function AppRouter() {
       />
 
       <Route
-        path={ROUTES.documentUpload}
+        path={
+          ROUTES.documentUpload
+        }
         element={
           <ProtectedRoute>
             <DocumentUpload />
@@ -131,7 +163,9 @@ export function AppRouter() {
       />
 
       <Route
-        path={ROUTES.conversations}
+        path={
+          ROUTES.conversations
+        }
         element={
           <ProtectedRoute>
             <Conversations />
@@ -140,7 +174,9 @@ export function AppRouter() {
       />
 
       <Route
-        path={ROUTES.conversationDetail}
+        path={
+          ROUTES.conversationDetail
+        }
         element={
           <ProtectedRoute>
             <ConversationDetail />
@@ -148,9 +184,46 @@ export function AppRouter() {
         }
       />
 
-      {/* Route ADMIN uniquement */}
+      {/* ============================= */}
+      {/* Activité                     */}
+      {/* ============================= */}
+
       <Route
-        path={ROUTES.users}
+        path={
+          ROUTES.activity
+        }
+        element={
+          <ProtectedRoute>
+            <TemporaryPage
+              title="Activité"
+            />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* ============================= */}
+      {/* Paramètres                   */}
+      {/* ============================= */}
+
+      <Route
+        path={
+          ROUTES.settings
+        }
+        element={
+          <ProtectedRoute>
+            <Settings />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* ============================= */}
+      {/* Administration               */}
+      {/* ============================= */}
+
+      <Route
+        path={
+          ROUTES.users
+        }
         element={
           <AdminRoute>
             <Users />
@@ -159,10 +232,27 @@ export function AppRouter() {
       />
 
       <Route
+        path={
+          ROUTES.extractionBenchmark
+        }
+        element={
+          <AdminRoute>
+            <ExtractionBenchmarkPage />
+          </AdminRoute>
+        }
+      />
+
+      {/* ============================= */}
+      {/* Fallback                     */}
+      {/* ============================= */}
+
+      <Route
         path="*"
         element={
           <Navigate
-            to={ROUTES.home}
+            to={
+              ROUTES.home
+            }
             replace
           />
         }

@@ -12,12 +12,16 @@ export const adminUserQueryKeys = {
   ] as const,
 };
 
-export function useAdminUsersQuery() {
+export function useAdminUsersQuery(
+  enabled = true,
+) {
   return useQuery({
     queryKey:
       adminUserQueryKeys.all,
 
     queryFn:
       getAdminUsers,
+
+    enabled,
   });
 }

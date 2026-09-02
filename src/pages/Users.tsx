@@ -45,95 +45,174 @@ export default function Users() {
   const [
     isCreateDialogOpen,
     setIsCreateDialogOpen,
-  ] = useState(false);
+  ] =
+    useState(false);
 
   const [
     selectedUserForDeletion,
     setSelectedUserForDeletion,
-  ] = useState<AdminUser | null>(
-    null,
-  );
+  ] =
+    useState<AdminUser | null>(
+      null,
+    );
 
   const [
     selectedUserForRoleChange,
     setSelectedUserForRoleChange,
-  ] = useState<AdminUser | null>(
-    null,
-  );
+  ] =
+    useState<AdminUser | null>(
+      null,
+    );
 
   const {
-    data: users,
+    data:
+      users,
+
     isLoading,
+
     isError,
-  } = useAdminUsersQuery();
+  } =
+    useAdminUsersQuery();
 
   const {
-    user: currentUser,
-  } = useCurrentUser();
+    user:
+      currentUser,
+  } =
+    useCurrentUser();
+
+  const administratorsCount =
+    users?.filter(
+      (
+        user,
+      ) =>
+        user.role ===
+        "ADMIN",
+    ).length ??
+    0;
+
+  const standardUsersCount =
+    users?.filter(
+      (
+        user,
+      ) =>
+        user.role ===
+        "USER",
+    ).length ??
+    0;
 
   return (
     <DashboardLayout>
-      <section className="space-y-6">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+      <div className="mx-auto w-full max-w-[1600px] space-y-6">
+        
+        <section className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-sm font-bold uppercase tracking-[0.18em] text-blue-600">
-              Administration
-            </p>
-
-            <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950">
-              Utilisateurs
-            </h1>
-
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-              Gérez les utilisateurs IntelliSearch ainsi que leurs rôles.
-            </p>
+            
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-              <span className="flex size-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+          <button
+            type="button"
+            onClick={() => {
+              setIsCreateDialogOpen(
+                true,
+              );
+            }}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-bold text-white shadow-sm shadow-blue-600/20 transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950"
+          >
+            <UserPlus
+              className="size-4"
+              aria-hidden="true"
+            />
+
+            Créer un utilisateur
+          </button>
+        </section>
+
+        {/* =====================================================
+            Résumé compact
+        ===================================================== */}
+
+        {!isLoading &&
+        !isError ? (
+          <section
+            className="grid overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:grid-cols-3"
+            aria-label="Résumé des utilisateurs"
+          >
+            <article className="flex items-center gap-3 border-b border-slate-100 px-5 py-4 dark:border-slate-800 sm:border-b-0 sm:border-r">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
                 <UsersRound
-                  className="size-5"
+                  className="size-4.5"
                   aria-hidden="true"
                 />
               </span>
 
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
                   Total
                 </p>
 
-                <p className="text-lg font-bold text-slate-950">
-                  {users?.length ?? 0}
+                <p className="mt-0.5 text-xl font-bold text-slate-950 dark:text-white">
+                  {
+                    users?.length ??
+                    0
+                  }
                 </p>
               </div>
-            </div>
+            </article>
 
-            <button
-              type="button"
-              onClick={() => {
-                setIsCreateDialogOpen(
-                  true,
-                );
-              }}
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-            >
-              <UserPlus
-                className="size-4"
-                aria-hidden="true"
-              />
+            <article className="flex items-center gap-3 border-b border-slate-100 px-5 py-4 dark:border-slate-800 sm:border-b-0 sm:border-r">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400">
+                <ShieldCheck
+                  className="size-4.5"
+                  aria-hidden="true"
+                />
+              </span>
 
-              Créer un utilisateur
-            </button>
-          </div>
-        </div>
+              <div>
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                  Administrateurs
+                </p>
 
-        <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+                <p className="mt-0.5 text-xl font-bold text-slate-950 dark:text-white">
+                  {
+                    administratorsCount
+                  }
+                </p>
+              </div>
+            </article>
+
+            <article className="flex items-center gap-3 px-5 py-4">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                <UserRound
+                  className="size-4.5"
+                  aria-hidden="true"
+                />
+              </span>
+
+              <div>
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                  Utilisateurs
+                </p>
+
+                <p className="mt-0.5 text-xl font-bold text-slate-950 dark:text-white">
+                  {
+                    standardUsersCount
+                  }
+                </p>
+              </div>
+            </article>
+          </section>
+        ) : null}
+
+        {/* =====================================================
+            Tableau
+        ===================================================== */}
+
+        <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900">
           {isLoading ? (
             <div className="flex min-h-64 items-center justify-center">
-              <div className="flex items-center gap-3 text-sm font-semibold text-slate-500">
+              <div className="flex items-center gap-3 text-sm font-semibold text-slate-500 dark:text-slate-400">
                 <LoaderCircle
-                  className="size-5 animate-spin"
+                  className="size-5 animate-spin text-blue-600 dark:text-blue-400"
                   aria-hidden="true"
                 />
 
@@ -145,11 +224,11 @@ export default function Users() {
           {isError ? (
             <div className="flex min-h-64 items-center justify-center px-6 text-center">
               <div>
-                <p className="font-bold text-red-700">
+                <p className="font-bold text-red-700 dark:text-red-300">
                   Impossible de charger les utilisateurs.
                 </p>
 
-                <p className="mt-2 text-sm text-slate-500">
+                <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
                   Vérifiez la connexion au backend et vos droits administrateur.
                 </p>
               </div>
@@ -158,21 +237,22 @@ export default function Users() {
 
           {!isLoading &&
           !isError &&
-          users?.length === 0 ? (
+          users?.length ===
+            0 ? (
             <div className="flex min-h-64 flex-col items-center justify-center px-6 text-center">
-              <span className="flex size-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
+              <span className="flex size-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                 <UsersRound
-                  className="size-6"
+                  className="size-5"
                   aria-hidden="true"
                 />
               </span>
 
-              <p className="mt-4 font-bold text-slate-900">
+              <p className="mt-4 font-bold text-slate-900 dark:text-white">
                 Aucun utilisateur
               </p>
 
-              <p className="mt-2 text-sm text-slate-500">
-                Aucun utilisateur n'est actuellement disponible.
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                Aucun compte n’est actuellement disponible.
               </p>
             </div>
           ) : null}
@@ -180,82 +260,91 @@ export default function Users() {
           {!isLoading &&
           !isError &&
           users &&
-          users.length > 0 ? (
+          users.length >
+            0 ? (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200">
-                <thead className="bg-slate-50">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
+              <table className="min-w-full">
+                <thead>
+                  <tr className="border-b border-slate-100 bg-slate-50/70 dark:border-slate-800 dark:bg-slate-800/50">
+                    <th className="px-6 py-3.5 text-left text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Utilisateur
                     </th>
 
-                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
+                    <th className="px-6 py-3.5 text-left text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Email
                     </th>
 
-                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
+                    <th className="px-6 py-3.5 text-left text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Rôle
                     </th>
 
-                    <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
+                    <th className="px-6 py-3.5 text-right text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Actions
                     </th>
                   </tr>
                 </thead>
 
-                <tbody className="divide-y divide-slate-100 bg-white">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {users.map(
-                    (user) => {
+                    (
+                      user,
+                    ) => {
                       const isCurrentUser =
                         currentUser?.keycloakId ===
                         user.keycloakId;
 
                       return (
                         <tr
-                          key={user.keycloakId}
-                          className="transition-colors hover:bg-slate-50"
+                          key={
+                            user.keycloakId
+                          }
+                          className="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/50"
                         >
+                          {/* Utilisateur */}
+
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
+                              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                                 <UserRound
-                                  className="size-5"
+                                  className="size-4.5"
                                   aria-hidden="true"
                                 />
                               </span>
 
                               <div className="min-w-0">
                                 <div className="flex items-center gap-2">
-                                  <p className="truncate text-sm font-bold text-slate-900">
-                                    {user.fullName}
+                                  <p className="max-w-xs truncate text-sm font-bold text-slate-900 dark:text-slate-100">
+                                    {
+                                      user.fullName
+                                    }
                                   </p>
 
                                   {isCurrentUser ? (
-                                    <span className="inline-flex shrink-0 items-center rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-blue-700">
+                                    <span className="inline-flex shrink-0 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-blue-700 dark:bg-blue-500/10 dark:text-blue-400">
                                       Vous
                                     </span>
                                   ) : null}
                                 </div>
-
-                                <p className="mt-1 truncate text-xs text-slate-400">
-                                  {user.keycloakId}
-                                </p>
                               </div>
                             </div>
                           </td>
 
-                          <td className="px-6 py-4 text-sm text-slate-600">
+                          {/* Email */}
+
+                          <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
                             {user.email ??
                               "Non renseigné"}
                           </td>
+
+                          {/* Rôle */}
 
                           <td className="px-6 py-4">
                             <span
                               className={
                                 user.role ===
                                 "ADMIN"
-                                  ? "inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700"
-                                  : "inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600"
+                                  ? "inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 dark:bg-blue-500/10 dark:text-blue-400"
+                                  : "inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300"
                               }
                             >
                               {user.role ===
@@ -278,70 +367,74 @@ export default function Users() {
                             </span>
                           </td>
 
-                          <td className="px-6 py-4 text-right">
-                            <div className="inline-flex items-center gap-2">
-                              {isCurrentUser ? (
-                                <button
-                                  type="button"
-                                  disabled
-                                  className="inline-flex size-10 cursor-not-allowed items-center justify-center rounded-xl border border-slate-200 bg-slate-100 text-slate-400"
-                                  aria-label="Impossible de modifier votre propre rôle"
-                                  title="Vous ne pouvez pas modifier votre propre rôle"
-                                >
-                                  <LockKeyhole
-                                    className="size-4"
-                                    aria-hidden="true"
-                                  />
-                                </button>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setSelectedUserForRoleChange(
-                                      user,
-                                    );
-                                  }}
-                                  className="inline-flex size-10 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-blue-600 transition hover:border-blue-200 hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-                                  aria-label={`Modifier le rôle de ${user.fullName}`}
-                                  title="Modifier le rôle"
-                                >
-                                  <Pencil
-                                    className="size-4"
-                                    aria-hidden="true"
-                                  />
-                                </button>
-                              )}
+                          {/* Actions */}
 
+                          <td className="px-6 py-4 text-right">
+                            <div className="inline-flex items-center gap-1.5">
                               {isCurrentUser ? (
-                                <button
-                                  type="button"
-                                  disabled
-                                  className="inline-flex size-10 cursor-not-allowed items-center justify-center rounded-xl border border-slate-200 bg-slate-100 text-slate-400"
-                                  aria-label="Impossible de supprimer votre propre compte"
-                                  title="Vous ne pouvez pas supprimer votre propre compte"
-                                >
-                                  <LockKeyhole
-                                    className="size-4"
-                                    aria-hidden="true"
-                                  />
-                                </button>
+                                <>
+                                  <button
+                                    type="button"
+                                    disabled
+                                    className="inline-flex size-9 cursor-not-allowed items-center justify-center rounded-lg text-slate-300 dark:text-slate-600"
+                                    aria-label="Impossible de modifier votre propre rôle"
+                                    title="Vous ne pouvez pas modifier votre propre rôle"
+                                  >
+                                    <LockKeyhole
+                                      className="size-4"
+                                      aria-hidden="true"
+                                    />
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    disabled
+                                    className="inline-flex size-9 cursor-not-allowed items-center justify-center rounded-lg text-slate-300 dark:text-slate-600"
+                                    aria-label="Impossible de supprimer votre propre compte"
+                                    title="Vous ne pouvez pas supprimer votre propre compte"
+                                  >
+                                    <LockKeyhole
+                                      className="size-4"
+                                      aria-hidden="true"
+                                    />
+                                  </button>
+                                </>
                               ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setSelectedUserForDeletion(
-                                      user,
-                                    );
-                                  }}
-                                  className="inline-flex size-10 items-center justify-center rounded-xl border border-red-100 bg-red-50 text-red-600 transition hover:border-red-200 hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
-                                  aria-label={`Supprimer ${user.fullName}`}
-                                  title="Supprimer"
-                                >
-                                  <Trash2
-                                    className="size-4"
-                                    aria-hidden="true"
-                                  />
-                                </button>
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedUserForRoleChange(
+                                        user,
+                                      );
+                                    }}
+                                    className="inline-flex size-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:text-slate-400 dark:hover:bg-blue-500/10 dark:hover:text-blue-400"
+                                    aria-label={`Modifier le rôle de ${user.fullName}`}
+                                    title="Modifier le rôle"
+                                  >
+                                    <Pencil
+                                      className="size-4"
+                                      aria-hidden="true"
+                                    />
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedUserForDeletion(
+                                        user,
+                                      );
+                                    }}
+                                    className="inline-flex size-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-red-50 hover:text-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 dark:text-slate-400 dark:hover:bg-red-500/10 dark:hover:text-red-400"
+                                    aria-label={`Supprimer ${user.fullName}`}
+                                    title="Supprimer"
+                                  >
+                                    <Trash2
+                                      className="size-4"
+                                      aria-hidden="true"
+                                    />
+                                  </button>
+                                </>
                               )}
                             </div>
                           </td>
@@ -353,8 +446,8 @@ export default function Users() {
               </table>
             </div>
           ) : null}
-        </div>
-      </section>
+        </section>
+      </div>
 
       <CreateAdminUserDialog
         isOpen={

@@ -1,9 +1,13 @@
 import {
+  motion,
+  useReducedMotion,
+} from "framer-motion";
+
+import {
   Area,
   AreaChart,
   CartesianGrid,
   Cell,
-  Legend,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -12,33 +16,29 @@ import {
   YAxis,
 } from "recharts";
 
-import { useDashboardAnalyticsQuery } from "@/features/dashboard/hooks/useDashboardAnalyticsQuery";
+import {
+  useDashboardAnalyticsQuery,
+} from "@/features/dashboard/hooks/useDashboardAnalyticsQuery";
 
-const tooltipContentStyle = {
-  borderRadius: "14px",
-  border: "1px solid #E2E8F0",
-  boxShadow:
-    "0 18px 45px -20px rgba(15, 23, 42, 0.25)",
-  fontSize: "12px",
-};
+import type {
+  DashboardExtractionDistributionDto,
+  DashboardExtractionMethod,
+  DashboardProcessingEvolutionDto,
+} from "@/features/dashboard/types/dashboard.types";
 
-const extractionMethodColors = {
-  TIKA: "#2563EB",
-  TESSERACT: "#06B6D4",
-} as const;
-
-const extractionMethodLabels = {
-  TIKA: "Extraction native",
-  TESSERACT: "OCR",
-} as const;
-
-function formatDay(
-  dateValue: string,
+function formatDayLabel(
+  value: string,
 ): string {
   const date =
-    new Date(
-      `${dateValue}T00:00:00`,
-    );
+    new Date(value);
+
+  if (
+    Number.isNaN(
+      date.getTime(),
+    )
+  ) {
+    return value;
+  }
 
   return new Intl.DateTimeFormat(
     "fr-FR",
@@ -47,125 +47,237 @@ function formatDay(
     },
   )
     .format(date)
-    .replace(".", "");
+    .replace(".", "")
+    .toLowerCase();
+}
+
+function formatPercentage(
+  value: number,
+): string {
+  return `${value.toLocaleString(
+    "fr-FR",
+    {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+    },
+  )} %`;
+}
+
+function resolveExtractionLabel(
+  method: DashboardExtractionMethod,
+): string {
+  if (method === "TESSERACT") {
+    return "OCR";
+  }
+
+  return "Extraction native";
+}
+
+function resolveExtractionColor(
+  method: DashboardExtractionMethod,
+): string {
+  if (method === "TESSERACT") {
+    return "#06B6D4";
+  }
+
+  return "#2563EB";
+}
+
+function buildProcessingEvolutionData(
+  items:
+    | DashboardProcessingEvolutionDto[]
+    | undefined,
+) {
+  if (!items) {
+    return [];
+  }
+
+  return items.map(
+    (item) => ({
+      label:
+        formatDayLabel(
+          item.date,
+        ),
+      importedDocuments:
+        item.importedDocuments,
+      completedDocuments:
+        item.completedDocuments,
+    }),
+  );
+}
+
+function buildExtractionDistributionData(
+  items:
+    | DashboardExtractionDistributionDto[]
+    | undefined,
+) {
+  if (!items || items.length === 0) {
+    return [];
+  }
+
+  const total =
+    items.reduce(
+      (
+        sum,
+        item,
+      ) =>
+        sum + item.count,
+      0,
+    );
+
+  return items
+    .filter(
+      (item) =>
+        item.count > 0,
+    )
+    .map((item) => ({
+      label:
+        resolveExtractionLabel(
+          item.extractionMethod,
+        ),
+      percentage:
+        total === 0
+          ? 0
+          : (item.count / total) *
+            100,
+      color:
+        resolveExtractionColor(
+          item.extractionMethod,
+        ),
+    }));
+}
+
+function ChartsSkeleton() {
+  return (
+    <section className="grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(360px,1fr)]">
+      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="h-6 w-52 animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
+
+        <div className="mt-3 h-4 w-72 animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
+
+        <div className="mt-8 h-[320px] animate-pulse rounded-2xl bg-slate-50 dark:bg-slate-800/70" />
+      </div>
+
+      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="h-6 w-48 animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
+
+        <div className="mt-3 h-4 w-72 animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
+
+        <div className="mt-8 flex justify-center">
+          <div className="size-56 animate-pulse rounded-full bg-slate-50 dark:bg-slate-800/70" />
+        </div>
+
+        <div className="mt-8 space-y-3">
+          <div className="h-14 animate-pulse rounded-2xl bg-slate-50 dark:bg-slate-800/70" />
+          <div className="h-14 animate-pulse rounded-2xl bg-slate-50 dark:bg-slate-800/70" />
+        </div>
+      </div>
+    </section>
+  );
 }
 
 export function DashboardCharts() {
+  const shouldReduceMotion =
+    useReducedMotion();
+
   const {
-    data: analytics,
+    data,
     isLoading,
     isError,
-  } = useDashboardAnalyticsQuery();
+  } =
+    useDashboardAnalyticsQuery();
+
+  const processingEvolutionData =
+    buildProcessingEvolutionData(
+      data?.processingEvolution,
+    );
+
+  const extractionDistributionData =
+    buildExtractionDistributionData(
+      data?.extractionDistribution,
+    );
 
   if (isLoading) {
-    return (
-      <div className="grid gap-6 xl:grid-cols-[1.6fr_1fr]">
-        <div className="h-[430px] animate-pulse rounded-3xl border border-slate-200 bg-white shadow-sm" />
-
-        <div className="h-[430px] animate-pulse rounded-3xl border border-slate-200 bg-white shadow-sm" />
-      </div>
-    );
+    return <ChartsSkeleton />;
   }
 
-  if (
-    isError ||
-    !analytics
-  ) {
+  if (isError) {
     return (
       <section
         role="alert"
-        className="rounded-3xl border border-red-200 bg-red-50 p-5"
+        className="rounded-3xl border border-red-200 bg-red-50 px-5 py-4 dark:border-red-900/50 dark:bg-red-950/30"
       >
-        <p className="text-sm font-semibold text-red-700">
-          Impossible de charger les analytics du tableau de bord.
+        <p className="text-sm font-semibold text-red-700 dark:text-red-300">
+          Impossible de charger les graphiques du tableau de bord.
         </p>
       </section>
     );
   }
 
-  const processingEvolutionData =
-    analytics.processingEvolution.map(
-      (point) => ({
-        day: formatDay(
-          point.date,
-        ),
-        documents:
-          point.importedDocuments,
-        completed:
-          point.completedDocuments,
-      }),
-    );
-
-  const totalExtractions =
-    analytics.extractionDistribution.reduce(
-      (total, item) =>
-        total + item.count,
-      0,
-    );
-
-  const extractionDistributionData =
-    analytics.extractionDistribution.map(
-      (item) => {
-        const percentage =
-          totalExtractions === 0
-            ? 0
-            : (
-                item.count /
-                totalExtractions
-              ) *
-              100;
-
-        return {
-          name:
-            extractionMethodLabels[
-              item.extractionMethod
-            ],
-          value: percentage,
-          count: item.count,
-          color:
-            extractionMethodColors[
-              item.extractionMethod
-            ],
-        };
-      },
-    );
-
   return (
-    <div className="grid gap-6 xl:grid-cols-[1.6fr_1fr]">
-      <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <motion.section
+      initial={
+        shouldReduceMotion
+          ? false
+          : {
+              opacity: 0,
+              y: 16,
+            }
+      }
+      animate={{
+        opacity: 1,
+        y: 0,
+      }}
+      transition={{
+        duration:
+          shouldReduceMotion
+            ? 0
+            : 0.45,
+        ease: [
+          0.22,
+          1,
+          0.36,
+          1,
+        ],
+      }}
+      className="grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(360px,1fr)]"
+    >
+      <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-lg font-bold text-slate-950">
+            <h2 className="text-xl font-bold tracking-tight text-slate-950 dark:text-white">
               Évolution des traitements
             </h2>
 
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
               Documents importés et terminés sur les 7 derniers jours
             </p>
           </div>
 
-          <span className="w-fit rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700">
+          <span className="inline-flex rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 dark:bg-blue-500/10 dark:text-blue-400">
             7 derniers jours
           </span>
         </div>
 
-        <div className="mt-6 h-80 w-full">
+        <div className="mt-6 h-[340px]">
           <ResponsiveContainer
             width="100%"
             height="100%"
           >
             <AreaChart
-              data={processingEvolutionData}
+              data={
+                processingEvolutionData
+              }
               margin={{
-                top: 10,
-                right: 10,
+                top: 12,
+                right: 8,
                 left: -20,
                 bottom: 0,
               }}
             >
               <defs>
                 <linearGradient
-                  id="documentsGradient"
+                  id="importedGradient"
                   x1="0"
                   y1="0"
                   x2="0"
@@ -176,11 +288,10 @@ export function DashboardCharts() {
                     stopColor="#2563EB"
                     stopOpacity={0.28}
                   />
-
                   <stop
                     offset="95%"
                     stopColor="#2563EB"
-                    stopOpacity={0}
+                    stopOpacity={0.02}
                   />
                 </linearGradient>
 
@@ -194,25 +305,24 @@ export function DashboardCharts() {
                   <stop
                     offset="5%"
                     stopColor="#06B6D4"
-                    stopOpacity={0.24}
+                    stopOpacity={0.22}
                   />
-
                   <stop
                     offset="95%"
                     stopColor="#06B6D4"
-                    stopOpacity={0}
+                    stopOpacity={0.02}
                   />
                 </linearGradient>
               </defs>
 
               <CartesianGrid
-                strokeDasharray="4 4"
-                stroke="#E2E8F0"
                 vertical={false}
+                strokeDasharray="4 4"
+                stroke="rgba(148, 163, 184, 0.25)"
               />
 
               <XAxis
-                dataKey="day"
+                dataKey="label"
                 axisLine={false}
                 tickLine={false}
                 tick={{
@@ -222,9 +332,9 @@ export function DashboardCharts() {
               />
 
               <YAxis
+                allowDecimals={false}
                 axisLine={false}
                 tickLine={false}
-                allowDecimals={false}
                 tick={{
                   fill: "#64748B",
                   fontSize: 12,
@@ -232,31 +342,38 @@ export function DashboardCharts() {
               />
 
               <Tooltip
-                contentStyle={
-                  tooltipContentStyle
-                }
-              />
-
-              <Legend
-                iconType="circle"
-                wrapperStyle={{
-                  fontSize: "12px",
-                  paddingTop: "18px",
+                cursor={{
+                  stroke:
+                    "rgba(37,99,235,0.15)",
+                  strokeWidth: 1,
+                }}
+                contentStyle={{
+                  borderRadius: 16,
+                  border:
+                    "1px solid rgba(226,232,240,1)",
+                  boxShadow:
+                    "0 12px 30px rgba(15,23,42,0.08)",
+                  backgroundColor:
+                    "#FFFFFF",
+                }}
+                labelStyle={{
+                  color: "#0F172A",
+                  fontWeight: 700,
                 }}
               />
 
               <Area
                 type="monotone"
-                dataKey="documents"
+                dataKey="importedDocuments"
                 name="Documents importés"
                 stroke="#2563EB"
                 strokeWidth={3}
-                fill="url(#documentsGradient)"
+                fill="url(#importedGradient)"
               />
 
               <Area
                 type="monotone"
-                dataKey="completed"
+                dataKey="completedDocuments"
                 name="Traitements terminés"
                 stroke="#06B6D4"
                 strokeWidth={3}
@@ -265,124 +382,129 @@ export function DashboardCharts() {
             </AreaChart>
           </ResponsiveContainer>
         </div>
-      </section>
 
-      <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        <div className="mt-4 flex flex-wrap justify-center gap-5">
+          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+            <span className="size-3 rounded-full bg-blue-600" />
+            Documents importés
+          </div>
+
+          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+            <span className="size-3 rounded-full bg-cyan-500" />
+            Traitements terminés
+          </div>
+        </div>
+      </article>
+
+      <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div>
-          <h2 className="text-lg font-bold text-slate-950">
+          <h2 className="text-xl font-bold tracking-tight text-slate-950 dark:text-white">
             Méthodes d’extraction
           </h2>
 
-          <p className="mt-1 text-sm text-slate-500">
-            Répartition réelle entre Tika et OCR
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            Répartition des documents dont l’extraction est disponible
           </p>
         </div>
 
-        {totalExtractions === 0 ? (
-          <div className="flex h-80 items-center justify-center">
-            <p className="text-sm font-medium text-slate-500">
-              Aucune extraction disponible.
-            </p>
-          </div>
-        ) : (
+        {extractionDistributionData.length >
+        0 ? (
           <>
-            <div className="mt-6 h-64">
-              <ResponsiveContainer
-                width="100%"
-                height="100%"
-              >
-                <PieChart>
-                  <Pie
-                    data={
-                      extractionDistributionData
-                    }
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={62}
-                    outerRadius={92}
-                    paddingAngle={5}
-                    strokeWidth={0}
-                  >
-                    {extractionDistributionData.map(
-                      (entry) => (
-                        <Cell
-                          key={entry.name}
-                          fill={
-                            entry.color
-                          }
-                        />
-                      ),
-                    )}
-                  </Pie>
+            <div className="relative mt-6 flex justify-center">
+              <div className="relative h-64 w-full max-w-[320px]">
+                <ResponsiveContainer
+                  width="100%"
+                  height="100%"
+                >
+                  <PieChart>
+                    <Pie
+                      data={
+                        extractionDistributionData
+                      }
+                      dataKey="percentage"
+                      nameKey="label"
+                      innerRadius={78}
+                      outerRadius={110}
+                      paddingAngle={3}
+                      stroke="none"
+                    >
+                      {extractionDistributionData.map(
+                        (
+                          item,
+                        ) => (
+                          <Cell
+                            key={
+                              item.label
+                            }
+                            fill={
+                              item.color
+                            }
+                          />
+                        ),
+                      )}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
 
-                  <Tooltip
-                    contentStyle={
-                      tooltipContentStyle
-                    }
-                    formatter={(
-                      value,
-                    ) => [
-                      `${Number(
-                        value,
-                      ).toLocaleString(
-                        "fr-FR",
-                        {
-                          maximumFractionDigits: 1,
-                        },
-                      )} %`,
-                      "Utilisation",
-                    ]}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+                <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                  <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
+                    Répartition
+                  </p>
+
+                  <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+                    en %
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <div className="grid gap-3">
+            <div className="mt-6 divide-y divide-slate-200 border-t border-slate-200 dark:divide-slate-800 dark:border-slate-800">
               {extractionDistributionData.map(
-                (entry) => (
+                (
+                  item,
+                ) => (
                   <div
-                    key={entry.name}
-                    className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3"
+                    key={
+                      item.label
+                    }
+                    className="flex items-center gap-3 py-4"
                   >
-                    <span className="flex items-center gap-3 text-sm font-semibold text-slate-700">
-                      <span
-                        className="size-2.5 rounded-full"
-                        style={{
-                          backgroundColor:
-                            entry.color,
-                        }}
-                      />
+                    <span
+                      className="size-3 shrink-0 rounded-full"
+                      style={{
+                        backgroundColor:
+                          item.color,
+                      }}
+                    />
 
-                      {entry.name}
+                    <span className="flex-1 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                      {
+                        item.label
+                      }
                     </span>
 
-                    <div className="text-right">
-                      <p className="font-bold text-slate-950">
-                        {entry.value.toLocaleString(
-                          "fr-FR",
-                          {
-                            maximumFractionDigits: 1,
-                          },
-                        )}
-                        {" %"}
-                      </p>
-
-                      <p className="mt-0.5 text-[11px] text-slate-500">
-                        {entry.count} document
-                        {entry.count > 1
-                          ? "s"
-                          : ""}
-                      </p>
-                    </div>
+                    <span className="text-sm font-bold text-slate-950 dark:text-white">
+                      {formatPercentage(
+                        item.percentage,
+                      )}
+                    </span>
                   </div>
                 ),
               )}
             </div>
           </>
+        ) : (
+          <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-6 text-center dark:border-slate-800 dark:bg-slate-950/40">
+            <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+              Aucune donnée d’extraction disponible.
+            </p>
+
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              Les statistiques apparaîtront dès que des documents seront traités.
+            </p>
+          </div>
         )}
-      </section>
-    </div>
+      </article>
+    </motion.section>
   );
 }

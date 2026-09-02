@@ -1,6 +1,19 @@
-import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { motion, useReducedMotion } from "framer-motion";
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
+import {
+  Link,
+  useSearchParams,
+} from "react-router-dom";
+
+import {
+  motion,
+  useReducedMotion,
+} from "framer-motion";
+
 import {
   AlertCircle,
   CheckCircle2,
@@ -11,19 +24,35 @@ import {
   LoaderCircle,
   Plus,
   Search,
-  ShieldCheck,
-  UserRound,
 } from "lucide-react";
 
-import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
-import { DocumentsTable } from "@/features/documents/components/DocumentsTable";
-import { useDocumentsQuery } from "@/features/documents/hooks/useDocumentsQuery";
-import type { DocumentStatus } from "@/features/documents/types/document.types";
-import { DashboardLayout } from "@/layouts/DashboardLayout";
-import { ROUTES } from "@/routes/routePaths";
+import {
+  DocumentsTable,
+} from "@/features/documents/components/DocumentsTable";
+
+import {
+  useDocumentsQuery,
+} from "@/features/documents/hooks/useDocumentsQuery";
+
+import type {
+  DocumentStatus,
+} from "@/features/documents/types/document.types";
+
+import {
+  DashboardLayout,
+} from "@/layouts/DashboardLayout";
+
+import {
+  ROUTES,
+} from "@/routes/routePaths";
+
+import {
+  useSettingsStore,
+} from "@/stores/settings.store";
 
 type StatusFilter =
   | "ALL"
+  | "ACTIVE"
   | DocumentStatus;
 
 type PaginationItem =
@@ -31,49 +60,109 @@ type PaginationItem =
   | "ellipsis-start"
   | "ellipsis-end";
 
-const PAGE_SIZE = 10;
+const statusFilterOptions:
+  readonly {
+    label: string;
+    value: StatusFilter;
+  }[] =
+[
+  {
+    label:
+      "Tous les statuts",
 
-const statusFilterOptions: readonly {
-  label: string;
-  value: StatusFilter;
-}[] = [
-  {
-    label: "Tous les statuts",
-    value: "ALL",
+    value:
+      "ALL",
   },
+
   {
-    label: "Terminés",
-    value: "COMPLETED",
+    label:
+      "Terminés",
+
+    value:
+      "COMPLETED",
   },
+
   {
-    label: "En cours",
-    value: "PROCESSING",
+    label:
+      "En attente / en cours",
+
+    value:
+      "ACTIVE",
   },
+
   {
-    label: "En attente",
-    value: "PENDING",
+    label:
+      "En cours",
+
+    value:
+      "PROCESSING",
   },
+
   {
-    label: "Échecs",
-    value: "FAILED",
+    label:
+      "En attente",
+
+    value:
+      "PENDING",
   },
-] as const;
+
+  {
+    label:
+      "Échecs",
+
+    value:
+      "FAILED",
+  },
+];
+
+function resolveStatusFilter(
+  value:
+    string | null,
+): StatusFilter {
+  if (
+    value ===
+      "COMPLETED" ||
+    value ===
+      "PROCESSING" ||
+    value ===
+      "PENDING" ||
+    value ===
+      "FAILED" ||
+    value ===
+      "ACTIVE"
+  ) {
+    return value;
+  }
+
+  return "ALL";
+}
 
 function buildPaginationItems(
   currentPage: number,
   totalPages: number,
 ): PaginationItem[] {
-  if (totalPages <= 7) {
+  if (
+    totalPages <=
+    7
+  ) {
     return Array.from(
       {
-        length: totalPages,
+        length:
+          totalPages,
       },
-      (_, index) =>
-        index + 1,
+      (
+        _,
+        index,
+      ) =>
+        index +
+        1,
     );
   }
 
-  if (currentPage <= 4) {
+  if (
+    currentPage <=
+    4
+  ) {
     return [
       1,
       2,
@@ -87,15 +176,20 @@ function buildPaginationItems(
 
   if (
     currentPage >=
-    totalPages - 3
+    totalPages -
+      3
   ) {
     return [
       1,
       "ellipsis-start",
-      totalPages - 4,
-      totalPages - 3,
-      totalPages - 2,
-      totalPages - 1,
+      totalPages -
+        4,
+      totalPages -
+        3,
+      totalPages -
+        2,
+      totalPages -
+        1,
       totalPages,
     ];
   }
@@ -103,9 +197,11 @@ function buildPaginationItems(
   return [
     1,
     "ellipsis-start",
-    currentPage - 1,
+    currentPage -
+      1,
     currentPage,
-    currentPage + 1,
+    currentPage +
+      1,
     "ellipsis-end",
     totalPages,
   ];
@@ -115,82 +211,147 @@ export default function Documents() {
   const shouldReduceMotion =
     useReducedMotion();
 
-  const {
-    user,
-    isAdmin,
-    isLoading:
-      isCurrentUserLoading,
-  } = useCurrentUser();
+  const [
+    searchParams,
+    setSearchParams,
+  ] =
+    useSearchParams();
 
-  const [searchTerm, setSearchTerm] =
-    useState("");
+  const documentsPerPage =
+    useSettingsStore(
+      (
+        state,
+      ) =>
+        state.documentsPerPage,
+    );
+
+  const [
+    searchTerm,
+    setSearchTerm,
+  ] =
+    useState(
+      "",
+    );
 
   const [
     statusFilter,
     setStatusFilter,
   ] =
     useState<StatusFilter>(
-      "ALL",
+      () =>
+        resolveStatusFilter(
+          searchParams.get(
+            "status",
+          ),
+        ),
     );
 
   const [
     currentPage,
     setCurrentPage,
   ] =
-    useState(1);
+    useState(
+      1,
+    );
 
   const {
-    data: documents = [],
+    data:
+      documents = [],
+
     isLoading,
+
     isError,
+
     error,
+
     refetch,
+
     isFetching,
-  } = useDocumentsQuery();
+  } =
+    useDocumentsQuery();
+
+  /*
+   * Synchronise le filtre avec l'URL.
+   *
+   * Important lorsque l'utilisateur arrive
+   * depuis un KPI du Dashboard.
+   */
+  useEffect(
+    () => {
+      const filterFromUrl =
+        resolveStatusFilter(
+          searchParams.get(
+            "status",
+          ),
+        );
+
+      setStatusFilter(
+        filterFromUrl,
+      );
+
+      setCurrentPage(
+        1,
+      );
+    },
+    [
+      searchParams,
+    ],
+  );
 
   const filteredDocuments =
-    useMemo(() => {
-      const normalizedSearchTerm =
-        searchTerm
-          .trim()
-          .toLowerCase();
+    useMemo(
+      () => {
+        const normalizedSearchTerm =
+          searchTerm
+            .trim()
+            .toLowerCase();
 
-      return documents.filter(
-        (
-          document,
-        ) => {
-          const matchesSearch =
-            normalizedSearchTerm
-              .length === 0 ||
-            document.fileName
-              .toLowerCase()
-              .includes(
-                normalizedSearchTerm,
-              );
+        return documents.filter(
+          (
+            document,
+          ) => {
+            const matchesSearch =
+              normalizedSearchTerm.length ===
+                0 ||
+              document.fileName
+                .toLowerCase()
+                .includes(
+                  normalizedSearchTerm,
+                );
 
-          const matchesStatus =
-            statusFilter === "ALL" ||
-            document.status ===
-              statusFilter;
+            const matchesStatus =
+              statusFilter ===
+              "ALL"
+                ? true
+                : statusFilter ===
+                    "ACTIVE"
+                  ? document.status ===
+                      "PENDING" ||
+                    document.status ===
+                      "PROCESSING"
+                  : document.status ===
+                    statusFilter;
 
-          return (
-            matchesSearch &&
-            matchesStatus
-          );
-        },
-      );
-    }, [
-      documents,
-      searchTerm,
-      statusFilter,
-    ]);
+            return (
+              matchesSearch &&
+              matchesStatus
+            );
+          },
+        );
+      },
+      [
+        documents,
+        searchTerm,
+        statusFilter,
+      ],
+    );
 
   const totalPages =
     Math.max(
       1,
       Math.ceil(
         filteredDocuments.length /
-          PAGE_SIZE,
+          documentsPerPage,
       ),
     );
 
@@ -201,13 +362,17 @@ export default function Documents() {
     );
 
   const startIndex =
-    (safeCurrentPage - 1) *
-    PAGE_SIZE;
+    (
+      safeCurrentPage -
+      1
+    ) *
+    documentsPerPage;
 
   const paginatedDocuments =
     filteredDocuments.slice(
       startIndex,
-      startIndex + PAGE_SIZE,
+      startIndex +
+        documentsPerPage,
     );
 
   const paginationItems =
@@ -217,26 +382,33 @@ export default function Documents() {
     );
 
   const displayedStart =
-    filteredDocuments.length === 0
+    filteredDocuments.length ===
+    0
       ? 0
-      : startIndex + 1;
+      : startIndex +
+        1;
 
   const displayedEnd =
     Math.min(
-      startIndex + PAGE_SIZE,
+      startIndex +
+        documentsPerPage,
       filteredDocuments.length,
     );
 
   const completedCount =
     documents.filter(
-      (document) =>
+      (
+        document,
+      ) =>
         document.status ===
         "COMPLETED",
     ).length;
 
   const failedCount =
     documents.filter(
-      (document) =>
+      (
+        document,
+      ) =>
         document.status ===
         "FAILED",
     ).length;
@@ -256,7 +428,8 @@ export default function Documents() {
 
   const handleStatusChange =
     (
-      value: StatusFilter,
+      value:
+        StatusFilter,
     ) => {
       setStatusFilter(
         value,
@@ -265,6 +438,33 @@ export default function Documents() {
       setCurrentPage(
         1,
       );
+
+      const nextSearchParams =
+        new URLSearchParams(
+          searchParams,
+        );
+
+      if (
+        value ===
+        "ALL"
+      ) {
+        nextSearchParams.delete(
+          "status",
+        );
+      } else {
+        nextSearchParams.set(
+          "status",
+          value,
+        );
+      }
+
+      setSearchParams(
+        nextSearchParams,
+        {
+          replace:
+            true,
+        },
+      );
     };
 
   const handlePageChange =
@@ -272,9 +472,12 @@ export default function Documents() {
       page: number,
     ) => {
       if (
-        page < 1 ||
-        page > totalPages ||
-        page === safeCurrentPage
+        page <
+          1 ||
+        page >
+          totalPages ||
+        page ===
+          safeCurrentPage
       ) {
         return;
       }
@@ -284,7 +487,9 @@ export default function Documents() {
       );
 
       window.scrollTo({
-        top: 0,
+        top:
+          0,
+
         behavior:
           shouldReduceMotion
             ? "auto"
@@ -299,19 +504,26 @@ export default function Documents() {
           shouldReduceMotion
             ? false
             : {
-                opacity: 0,
-                y: 20,
+                opacity:
+                  0,
+
+                y:
+                  20,
               }
         }
         animate={{
-          opacity: 1,
-          y: 0,
+          opacity:
+            1,
+
+          y:
+            0,
         }}
         transition={{
           duration:
             shouldReduceMotion
               ? 0
               : 0.6,
+
           ease: [
             0.22,
             1,
@@ -326,7 +538,7 @@ export default function Documents() {
             ROUTES.documentUpload
           }
           aria-label="Importer des documents"
-          className="fixed bottom-6 right-6 z-40 flex size-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg shadow-blue-600/25 transition-all duration-300 hover:scale-105 hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-600/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+          className="fixed bottom-6 right-6 z-40 flex size-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg shadow-blue-600/25 transition-all duration-300 hover:scale-105 hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-600/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950"
         >
           <Plus
             className="size-6"
@@ -334,78 +546,27 @@ export default function Documents() {
           />
         </Link>
 
-        {!isCurrentUserLoading &&
-        user ? (
-          <section className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-start gap-4">
-              <span
-                className={
-                  isAdmin
-                    ? "flex size-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-700"
-                    : "flex size-12 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-600"
-                }
-              >
-                {isAdmin ? (
-                  <ShieldCheck
-                    className="size-5"
-                    aria-hidden="true"
-                  />
-                ) : (
-                  <UserRound
-                    className="size-5"
-                    aria-hidden="true"
-                  />
-                )}
-              </span>
-
-              <div>
-                <h1 className="text-xl font-bold tracking-tight text-slate-950">
-                  Documents
-                </h1>
-
-                <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500">
-                  {isAdmin
-                    ? "Vous consultez l’ensemble des documents enregistrés sur la plateforme."
-                    : "Vous consultez uniquement les documents associés à votre compte."}
-                </p>
-              </div>
-            </div>
-
-            <span
-              className={
-                isAdmin
-                  ? "w-fit rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700"
-                  : "w-fit rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-600"
-              }
-            >
-              {isAdmin
-                ? "Vue globale"
-                : "Espace personnel"}
-            </span>
-          </section>
-        ) : null}
-
         <section className="grid gap-4 sm:grid-cols-3">
-          <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-sm font-semibold text-slate-500">
+          <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
               Total des documents
             </p>
 
-            <p className="mt-2 text-3xl font-bold text-slate-950">
+            <p className="mt-2 text-3xl font-bold text-slate-950 dark:text-white">
               {isLoading
                 ? "—"
                 : documents.length}
             </p>
           </article>
 
-          <article className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-5">
+          <article className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-5 dark:border-emerald-900/40 dark:bg-emerald-500/5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold text-emerald-700">
+                <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
                   Traitements terminés
                 </p>
 
-                <p className="mt-2 text-3xl font-bold text-slate-950">
+                <p className="mt-2 text-3xl font-bold text-slate-950 dark:text-white">
                   {isLoading
                     ? "—"
                     : completedCount}
@@ -413,20 +574,20 @@ export default function Documents() {
               </div>
 
               <CheckCircle2
-                className="size-6 text-emerald-600"
+                className="size-6 text-emerald-600 dark:text-emerald-400"
                 aria-hidden="true"
               />
             </div>
           </article>
 
-          <article className="rounded-2xl border border-red-100 bg-red-50/50 p-5">
+          <article className="rounded-2xl border border-red-100 bg-red-50/50 p-5 dark:border-red-900/40 dark:bg-red-500/5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold text-red-700">
+                <p className="text-sm font-semibold text-red-700 dark:text-red-400">
                   Traitements échoués
                 </p>
 
-                <p className="mt-2 text-3xl font-bold text-slate-950">
+                <p className="mt-2 text-3xl font-bold text-slate-950 dark:text-white">
                   {isLoading
                     ? "—"
                     : failedCount}
@@ -434,37 +595,41 @@ export default function Documents() {
               </div>
 
               <CircleAlert
-                className="size-6 text-red-600"
+                className="size-6 text-red-600 dark:text-red-400"
                 aria-hidden="true"
               />
             </div>
           </article>
         </section>
 
-        <section className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:flex-row md:items-center">
+        <section className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 md:flex-row md:items-center">
           <div className="relative flex-1">
             <Search
-              className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-slate-400"
+              className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-slate-400 dark:text-slate-500"
               aria-hidden="true"
             />
 
             <input
               type="search"
-              value={searchTerm}
-              onChange={(event) => {
+              value={
+                searchTerm
+              }
+              onChange={(
+                event,
+              ) => {
                 handleSearchChange(
                   event.target.value,
                 );
               }}
               placeholder="Rechercher par nom de document..."
-              className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm text-slate-950 outline-none transition-all placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+              className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm text-slate-950 outline-none transition-all placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-blue-500 dark:focus:bg-slate-800"
               aria-label="Rechercher un document"
             />
           </div>
 
           <div className="relative min-w-56">
             <Filter
-              className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-slate-400"
+              className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-slate-400 dark:text-slate-500"
               aria-hidden="true"
             />
 
@@ -472,17 +637,20 @@ export default function Documents() {
               value={
                 statusFilter
               }
-              onChange={(event) => {
+              onChange={(
+                event,
+              ) => {
                 handleStatusChange(
-                  event.target
-                    .value as StatusFilter,
+                  event.target.value as StatusFilter,
                 );
               }}
-              className="h-11 w-full appearance-none rounded-xl border border-slate-200 bg-white pl-11 pr-10 text-sm font-medium text-slate-700 outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+              className="h-11 w-full appearance-none rounded-xl border border-slate-200 bg-white pl-11 pr-10 text-sm font-medium text-slate-700 outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
               aria-label="Filtrer les documents par statut"
             >
               {statusFilterOptions.map(
-                (option) => (
+                (
+                  option,
+                ) => (
                   <option
                     key={
                       option.value
@@ -502,14 +670,14 @@ export default function Documents() {
 
           <div className="flex min-w-fit items-center gap-2">
             {isFetching &&
-              !isLoading && (
-                <LoaderCircle
-                  className="size-4 animate-spin text-blue-600"
-                  aria-label="Actualisation des documents"
-                />
-              )}
+            !isLoading ? (
+              <LoaderCircle
+                className="size-4 animate-spin text-blue-600 dark:text-blue-400"
+                aria-label="Actualisation des documents"
+              />
+            ) : null}
 
-            <p className="text-sm font-medium text-slate-500">
+            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
               {isLoading ? (
                 "Chargement..."
               ) : (
@@ -528,234 +696,236 @@ export default function Documents() {
           </div>
         </section>
 
-        {isLoading && (
+        {isLoading ? (
           <section
-            className="flex min-h-64 items-center justify-center rounded-3xl border border-slate-200 bg-white shadow-sm"
+            className="flex min-h-64 items-center justify-center rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900"
             aria-live="polite"
           >
             <div className="text-center">
               <LoaderCircle
-                className="mx-auto size-8 animate-spin text-blue-600"
+                className="mx-auto size-8 animate-spin text-blue-600 dark:text-blue-400"
                 aria-hidden="true"
               />
 
-              <p className="mt-4 text-sm font-semibold text-slate-700">
+              <p className="mt-4 text-sm font-semibold text-slate-700 dark:text-slate-300">
                 Chargement des documents...
               </p>
 
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 Récupération des données depuis le serveur.
               </p>
             </div>
           </section>
-        )}
+        ) : null}
 
         {isError &&
-          !isLoading && (
-            <section
-              className="rounded-3xl border border-red-200 bg-white p-6 shadow-sm"
-              role="alert"
-            >
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-start gap-3">
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600">
-                    <AlertCircle
-                      className="size-5"
-                      aria-hidden="true"
-                    />
-                  </span>
-
-                  <div>
-                    <h2 className="font-bold text-slate-950">
-                      Impossible de charger les documents
-                    </h2>
-
-                    <p className="mt-1 text-sm text-slate-500">
-                      {error instanceof
-                      Error
-                        ? error.message
-                        : "Une erreur est survenue lors de la communication avec le serveur."}
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    void refetch();
-                  }}
-                  disabled={
-                    isFetching
-                  }
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-                >
-                  <LoaderCircle
-                    className={`size-4 ${
-                      isFetching
-                        ? "animate-spin"
-                        : ""
-                    }`}
+        !isLoading ? (
+          <section
+            className="rounded-3xl border border-red-200 bg-white p-6 shadow-sm dark:border-red-900/50 dark:bg-slate-900"
+            role="alert"
+          >
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400">
+                  <AlertCircle
+                    className="size-5"
                     aria-hidden="true"
                   />
+                </span>
 
-                  Réessayer
-                </button>
+                <div>
+                  <h2 className="font-bold text-slate-950 dark:text-white">
+                    Impossible de charger les documents
+                  </h2>
+
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    {error instanceof
+                    Error
+                      ? error.message
+                      : "Une erreur est survenue lors de la communication avec le serveur."}
+                  </p>
+                </div>
               </div>
-            </section>
-          )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  void refetch();
+                }}
+                disabled={
+                  isFetching
+                }
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <LoaderCircle
+                  className={`size-4 ${
+                    isFetching
+                      ? "animate-spin"
+                      : ""
+                  }`}
+                  aria-hidden="true"
+                />
+
+                Réessayer
+              </button>
+            </div>
+          </section>
+        ) : null}
 
         {!isLoading &&
-          !isError && (
-            <div className="space-y-4">
-              <DocumentsTable
-                documents={
-                  paginatedDocuments
-                }
-              />
+        !isError ? (
+          <div className="space-y-4">
+            <DocumentsTable
+              documents={
+                paginatedDocuments
+              }
+            />
 
-              {filteredDocuments.length >
-                0 && (
-                <section className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
-                  <p className="text-sm text-slate-500">
-                    Affichage de{" "}
-                    <span className="font-semibold text-slate-800">
-                      {
-                        displayedStart
-                      }
-                    </span>{" "}
-                    à{" "}
-                    <span className="font-semibold text-slate-800">
-                      {
-                        displayedEnd
-                      }
-                    </span>{" "}
-                    sur{" "}
-                    <span className="font-semibold text-slate-800">
-                      {
-                        filteredDocuments.length
-                      }
-                    </span>{" "}
-                    document
-                    {filteredDocuments.length >
-                    1
-                      ? "s"
-                      : ""}
-                  </p>
+            {filteredDocuments.length >
+            0 ? (
+              <section className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:flex-row lg:items-center lg:justify-between">
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Affichage de{" "}
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">
+                    {
+                      displayedStart
+                    }
+                  </span>{" "}
+                  à{" "}
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">
+                    {
+                      displayedEnd
+                    }
+                  </span>{" "}
+                  sur{" "}
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">
+                    {
+                      filteredDocuments.length
+                    }
+                  </span>{" "}
+                  document
+                  {filteredDocuments.length >
+                  1
+                    ? "s"
+                    : ""}
+                </p>
 
-                  <nav
-                    className="flex flex-wrap items-center gap-2"
-                    aria-label="Pagination des documents"
+                <nav
+                  className="flex flex-wrap items-center gap-2"
+                  aria-label="Pagination des documents"
+                >
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handlePageChange(
+                        safeCurrentPage -
+                          1,
+                      )
+                    }
+                    disabled={
+                      safeCurrentPage ===
+                      1
+                    }
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition-all hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-blue-500/40 dark:hover:bg-blue-500/10 dark:hover:text-blue-400"
                   >
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handlePageChange(
-                          safeCurrentPage -
-                            1,
-                        )
-                      }
-                      disabled={
-                        safeCurrentPage ===
-                        1
-                      }
-                      className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition-all hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-                    >
-                      <ChevronLeft
-                        className="size-4"
-                        aria-hidden="true"
-                      />
+                    <ChevronLeft
+                      className="size-4"
+                      aria-hidden="true"
+                    />
 
-                      <span className="hidden sm:inline">
-                        Précédent
-                      </span>
-                    </button>
+                    <span className="hidden sm:inline">
+                      Précédent
+                    </span>
+                  </button>
 
-                    <div className="flex items-center gap-1">
-                      {paginationItems.map(
-                        (item) => {
-                          if (
-                            item ===
-                              "ellipsis-start" ||
-                            item ===
-                              "ellipsis-end"
-                          ) {
-                            return (
-                              <span
-                                key={
-                                  item
-                                }
-                                className="flex size-10 items-center justify-center text-sm font-semibold text-slate-400"
-                                aria-hidden="true"
-                              >
-                                …
-                              </span>
-                            );
-                          }
-
-                          const isActive =
-                            item ===
-                            safeCurrentPage;
-
+                  <div className="flex items-center gap-1">
+                    {paginationItems.map(
+                      (
+                        item,
+                      ) => {
+                        if (
+                          item ===
+                            "ellipsis-start" ||
+                          item ===
+                            "ellipsis-end"
+                        ) {
                           return (
-                            <button
+                            <span
                               key={
                                 item
                               }
-                              type="button"
-                              onClick={() =>
-                                handlePageChange(
-                                  item,
-                                )
-                              }
-                              aria-current={
-                                isActive
-                                  ? "page"
-                                  : undefined
-                              }
-                              aria-label={`Page ${item}`}
-                              className={
-                                isActive
-                                  ? "flex size-10 items-center justify-center rounded-xl bg-blue-600 text-sm font-bold text-white shadow-sm shadow-blue-600/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-                                  : "flex size-10 items-center justify-center rounded-xl border border-transparent text-sm font-semibold text-slate-600 transition-all hover:border-slate-200 hover:bg-slate-50 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-                              }
+                              className="flex size-10 items-center justify-center text-sm font-semibold text-slate-400 dark:text-slate-500"
+                              aria-hidden="true"
                             >
-                              {
-                                item
-                              }
-                            </button>
+                              …
+                            </span>
                           );
-                        },
-                      )}
-                    </div>
+                        }
 
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handlePageChange(
-                          safeCurrentPage +
-                            1,
-                        )
-                      }
-                      disabled={
-                        safeCurrentPage ===
-                        totalPages
-                      }
-                      className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition-all hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-                    >
-                      <span className="hidden sm:inline">
-                        Suivant
-                      </span>
+                        const isActive =
+                          item ===
+                          safeCurrentPage;
 
-                      <ChevronRight
-                        className="size-4"
-                        aria-hidden="true"
-                      />
-                    </button>
-                  </nav>
-                </section>
-              )}
-            </div>
-          )}
+                        return (
+                          <button
+                            key={
+                              item
+                            }
+                            type="button"
+                            onClick={() =>
+                              handlePageChange(
+                                item,
+                              )
+                            }
+                            aria-current={
+                              isActive
+                                ? "page"
+                                : undefined
+                            }
+                            aria-label={`Page ${item}`}
+                            className={
+                              isActive
+                                ? "flex size-10 items-center justify-center rounded-xl bg-blue-600 text-sm font-bold text-white shadow-sm shadow-blue-600/20"
+                                : "flex size-10 items-center justify-center rounded-xl border border-transparent text-sm font-semibold text-slate-600 transition-all hover:border-slate-200 hover:bg-slate-50 hover:text-slate-950 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:bg-slate-800 dark:hover:text-white"
+                            }
+                          >
+                            {
+                              item
+                            }
+                          </button>
+                        );
+                      },
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handlePageChange(
+                        safeCurrentPage +
+                          1,
+                      )
+                    }
+                    disabled={
+                      safeCurrentPage ===
+                      totalPages
+                    }
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition-all hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-blue-500/40 dark:hover:bg-blue-500/10 dark:hover:text-blue-400"
+                  >
+                    <span className="hidden sm:inline">
+                      Suivant
+                    </span>
+
+                    <ChevronRight
+                      className="size-4"
+                      aria-hidden="true"
+                    />
+                  </button>
+                </nav>
+              </section>
+            ) : null}
+          </div>
+        ) : null}
       </motion.div>
     </DashboardLayout>
   );

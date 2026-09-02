@@ -38,46 +38,52 @@ export function DeleteDocumentDialog({
   onClose,
   onConfirm,
 }: DeleteDocumentDialogProps) {
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
-    const handleKeyDown = (
-      event: KeyboardEvent,
-    ) => {
-      if (
-        event.key === "Escape" &&
-        !isDeleting
-      ) {
-        onClose();
+  useEffect(
+    () => {
+      if (!isOpen) {
+        return;
       }
-    };
 
-    documentBodyLock(
-      true,
-    );
+      const handleKeyDown =
+        (
+          event:
+            KeyboardEvent,
+        ) => {
+          if (
+            event.key ===
+              "Escape" &&
+            !isDeleting
+          ) {
+            onClose();
+          }
+        };
 
-    window.addEventListener(
-      "keydown",
-      handleKeyDown,
-    );
-
-    return () => {
       documentBodyLock(
-        false,
+        true,
       );
 
-      window.removeEventListener(
+      window.addEventListener(
         "keydown",
         handleKeyDown,
       );
-    };
-  }, [
-    isOpen,
-    isDeleting,
-    onClose,
-  ]);
+
+      return () => {
+        documentBodyLock(
+          false,
+        );
+
+        window.removeEventListener(
+          "keydown",
+          handleKeyDown,
+        );
+      };
+    },
+    [
+      isOpen,
+      isDeleting,
+      onClose,
+    ],
+  );
 
   if (
     !isOpen ||
@@ -96,7 +102,7 @@ export function DeleteDocumentDialog({
         disabled={
           isDeleting
         }
-        className="absolute inset-0 bg-slate-950/45 backdrop-blur-sm"
+        className="absolute inset-0 bg-slate-950/55 backdrop-blur-sm"
         aria-label="Fermer la fenêtre de suppression"
       />
 
@@ -105,11 +111,11 @@ export function DeleteDocumentDialog({
         aria-modal="true"
         aria-labelledby="delete-document-title"
         aria-describedby="delete-document-description"
-        className="relative z-10 w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/20"
+        className="relative z-10 w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/20 transition-colors dark:border-slate-700 dark:bg-slate-900"
       >
-        <div className="flex items-start justify-between border-b border-slate-100 px-6 py-5">
+        <div className="flex items-start justify-between border-b border-slate-100 px-6 py-5 dark:border-slate-800">
           <div className="flex gap-4">
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400">
               <Trash2
                 className="size-5"
                 aria-hidden="true"
@@ -117,20 +123,20 @@ export function DeleteDocumentDialog({
             </span>
 
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-red-600">
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-red-600 dark:text-red-400">
                 Suppression
               </p>
 
               <h2
                 id="delete-document-title"
-                className="mt-1 text-xl font-bold text-slate-950"
+                className="mt-1 text-xl font-bold text-slate-950 dark:text-white"
               >
                 Supprimer le document ?
               </h2>
 
               <p
                 id="delete-document-description"
-                className="mt-1 text-sm leading-6 text-slate-500"
+                className="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400"
               >
                 Cette action supprimera définitivement ce document de votre espace.
               </p>
@@ -145,7 +151,7 @@ export function DeleteDocumentDialog({
             disabled={
               isDeleting
             }
-            className="flex size-10 shrink-0 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex size-10 shrink-0 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-white"
             aria-label="Fermer"
           >
             <X
@@ -156,8 +162,8 @@ export function DeleteDocumentDialog({
         </div>
 
         <div className="space-y-5 px-6 py-6">
-          <div className="flex items-start gap-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white text-blue-600 shadow-sm">
+          <div className="flex items-start gap-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-700 dark:bg-slate-800/60">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white text-blue-600 shadow-sm dark:bg-slate-900 dark:text-blue-400">
               <FileText
                 className="size-5"
                 aria-hidden="true"
@@ -165,28 +171,33 @@ export function DeleteDocumentDialog({
             </span>
 
             <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                 Document concerné
               </p>
 
               <p
-                className="mt-1 truncate text-sm font-bold text-slate-950"
+                className="mt-1 truncate text-sm font-bold text-slate-950 dark:text-white"
                 title={
                   document.fileName
                 }
               >
-                {document.fileName}
+                {
+                  document.fileName
+                }
               </p>
 
-              <p className="mt-1 text-xs text-slate-500">
-                Document #{document.id} · version {document.version}
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                Document #
+                {document.id}
+                {" · version "}
+                {document.version}
               </p>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-red-100 bg-red-50/70 p-4">
+          <div className="rounded-2xl border border-red-100 bg-red-50/70 p-4 dark:border-red-900/50 dark:bg-red-950/30">
             <div className="flex items-start gap-3">
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white text-red-600 shadow-sm">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white text-red-600 shadow-sm dark:bg-red-950/60 dark:text-red-400">
                 <AlertTriangle
                   className="size-4"
                   aria-hidden="true"
@@ -194,11 +205,11 @@ export function DeleteDocumentDialog({
               </span>
 
               <div>
-                <p className="text-sm font-bold text-red-800">
+                <p className="text-sm font-bold text-red-800 dark:text-red-300">
                   Action irréversible
                 </p>
 
-                <p className="mt-1 text-xs leading-5 text-red-700">
+                <p className="mt-1 text-xs leading-5 text-red-700 dark:text-red-400">
                   Une fois le document supprimé, cette opération ne pourra pas être annulée.
                 </p>
               </div>
@@ -208,19 +219,19 @@ export function DeleteDocumentDialog({
           {isError ? (
             <div
               role="alert"
-              className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3"
+              className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900/50 dark:bg-red-950/30"
             >
-              <p className="text-sm font-semibold text-red-700">
+              <p className="text-sm font-semibold text-red-700 dark:text-red-300">
                 Impossible de supprimer le document.
               </p>
 
-              <p className="mt-1 text-xs leading-5 text-red-600">
+              <p className="mt-1 text-xs leading-5 text-red-600 dark:text-red-400">
                 Vérifiez la connexion avec le serveur puis réessayez.
               </p>
             </div>
           ) : null}
 
-          <div className="flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:justify-end">
+          <div className="flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 dark:border-slate-800 sm:flex-row sm:justify-end">
             <button
               type="button"
               onClick={
@@ -229,7 +240,7 @@ export function DeleteDocumentDialog({
               disabled={
                 isDeleting
               }
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
             >
               Annuler
             </button>

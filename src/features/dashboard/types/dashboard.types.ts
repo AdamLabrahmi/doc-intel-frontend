@@ -1,4 +1,6 @@
-import type { LucideIcon } from "lucide-react";
+import type {
+  LucideIcon,
+} from "lucide-react";
 
 export type DashboardStatTone =
   | "blue"
@@ -6,25 +8,44 @@ export type DashboardStatTone =
   | "amber"
   | "red";
 
+export type DashboardDocumentStatusFilter =
+  | "ALL"
+  | "COMPLETED"
+  | "ACTIVE"
+  | "FAILED";
+
 export interface DashboardStat {
   title: string;
+
   value: string;
+
   description: string;
+
   trend: string;
+
   icon: LucideIcon;
+
   tone: DashboardStatTone;
+
+  documentStatusFilter:
+    DashboardDocumentStatusFilter;
 }
 
 export interface DashboardSummaryDto {
   totalDocuments: number;
+
   completedDocuments: number;
+
   pendingDocuments: number;
+
   failedDocuments: number;
 }
 
 export interface DashboardProcessingEvolutionDto {
   date: string;
+
   importedDocuments: number;
+
   completedDocuments: number;
 }
 
@@ -33,11 +54,16 @@ export type DashboardExtractionMethod =
   | "TESSERACT";
 
 export interface DashboardExtractionDistributionDto {
-  extractionMethod: DashboardExtractionMethod;
+  extractionMethod:
+    DashboardExtractionMethod;
+
   count: number;
 }
 
 export interface DashboardAnalyticsDto {
-  processingEvolution: DashboardProcessingEvolutionDto[];
-  extractionDistribution: DashboardExtractionDistributionDto[];
+  processingEvolution:
+    DashboardProcessingEvolutionDto[];
+
+  extractionDistribution:
+    DashboardExtractionDistributionDto[];
 }
